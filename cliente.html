@@ -3,225 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoTag - Scanner Premium</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <title>EcoTag ERP - Painel do Fabricante</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         :root {
-            --bg: #0a0a0a;
-            --surface: #161616;
-            --primary: #ffffff;
-            --text-muted: #888888;
-            --border: #222222;
-            --success: #00e676;
-            --danger: #ff1744;
+            --primary: #0a0a0a;
+            --primary-hover: #262626;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #1a1a1a;
+            --border: #e5e5e5;
         }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background-color: var(--bg); color: #ffffff; margin: 0; padding: 20px;
-            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; padding: 40px 20px; color: var(--text); 
+            display: flex; justify-content: center;
         }
 
-        .app-container {
-            width: 100%; max-width: 420px; background: var(--surface);
-            padding: 30px; border-radius: 24px; border: 1px solid var(--border);
-            box-sizing: border-box; text-align: center;
+        .container { 
+            width: 100%; max-width: 500px; background: var(--card-bg); 
+            padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
         }
 
-        h2 { font-size: 20px; font-weight: 700; margin: 0 0 5px 0; letter-spacing: -0.5px; }
-        p.desc { color: var(--text-muted); font-size: 13px; margin: 0 0 25px 0; }
-
-        /* ÁREA DE ESCANEAMENTO TOTALMENTE LIVRE E LIMPA */
-        .scanner-container {
-            position: relative; width: 100%; aspect-ratio: 4/3;
-            background: #000; border-radius: 16px; overflow: hidden;
-            border: 1px solid var(--border); margin-bottom: 25px;
-        }
+        h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+        p.subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
+        .form-group { text-align: left; margin-bottom: 20px; }
+        label { display: block; font-size: 13px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
         
-        #reader { width: 100% !important; height: 100% !important; border: none !important; }
+        select, input { 
+            width: 100%; padding: 14px; border-radius: 8px; border: 1px solid var(--border); 
+            font-size: 15px; box-sizing: border-box; background: #fafafa;
+        }
+
+        button { 
+            width: 100%; padding: 15px; border-radius: 8px; background-color: var(--primary); 
+            color: white; border: none; font-weight: 600; font-size: 15px; cursor: pointer; margin-top: 10px;
+        }
+        button:hover { background-color: var(--primary-hover); }
         
-        /* Remove botões e textos nativos poluídos da biblioteca */
-        #reader__dashboard, #reader__status_span, #reader img { display: none !important; }
-        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
-
-        /* Linha de Scanner (Mira) */
-        .scanner-laser {
-            position: absolute; top: 50%; left: 5%; width: 90%; height: 2px;
-            background-color: var(--success); box-shadow: 0 0 12px var(--success);
-            animation: scanAnimation 2.5s infinite ease-in-out; pointer-events: none; z-index: 10;
-        }
-        @keyframes scanAnimation {
-            0% { top: 15%; }
-            50% { top: 85%; }
-            100% { top: 15%; }
-        }
-
-        /* Aviso de "Próxima leitura liberada" */
-        .countdown-alert {
-            display: none; background: rgba(0, 230, 118, 0.15); color: var(--success);
-            padding: 8px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-bottom: 15px;
-        }
-
-        .input-group { margin-bottom: 20px; text-align: left; }
-        label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
+        /* Área da Etiqueta Física Otimizada */
+        .print-area-wrapper { display: none; margin-top: 35px; text-align: center; }
         
-        input {
-            width: 100%; padding: 14px; border-radius: 12px; background: #222; border: 1px solid var(--border);
-            color: #fff; font-size: 16px; text-align: center; box-sizing: border-box; font-weight: bold;
+        .print-area {
+            background: white;
+            border: 1px dashed #000;
+            padding: 10px;
+            width: 62mm; /* Largura padrão de etiquetas de gôndola/têxtil */
+            margin: 0 auto 15px auto;
+            box-sizing: border-box;
+            text-align: center;
+            color: #000;
         }
-
-        /* Card de Resultado Nível Renner */
-        .result-card {
-            display: none; margin-top: 25px; padding: 20px; border-radius: 16px;
-            background: #1d1d1d; border: 1px solid var(--border); text-align: left;
-        }
-        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .result-title { font-size: 16px; font-weight: 700; margin: 0; }
+        .brand-label { font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; }
+        .desc-tag { font-size: 11px; font-weight: 600; margin: 2px 0; text-transform: uppercase; }
         
-        /* Preço destacado em tamanho maior */
-        .price-badge { font-size: 22px; font-weight: 800; color: #fff; margin: 10px 0; display: block; }
+        /* Container do SVG do Código de Barras */
+        .barcode-container { width: 100%; margin: 5px 0; background: #fff; }
+        .barcode-container svg { width: 100%; max-height: 65px; }
 
-        .info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
-        .info-row strong { color: #fff; }
-        .advice-box { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 13px; line-height: 1.4; }
+        .price-tag { font-size: 20px; font-weight: 800; margin-top: 5px; }
+
+        .btn-print { background-color: #444; }
+
+        /* Regras rígidas de Impressão (Esconde tudo exceto a etiqueta de 62mm) */
+        @media print {
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { 
+                position: absolute; left: 0; top: 0; 
+                width: 62mm; border: none; padding: 0; margin: 0;
+            }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <h2>📱 Consulta EcoTag</h2>
-        <p class="desc">Aponte para o código de barras gerado</p>
-
-        <div class="scanner-container">
-            <div id="reader"></div>
-            <div class="scanner-laser" id="laser"></div>
+    <div class="container">
+        <h2>🏭 EcoTag Enterprise</h2>
+        <p class="subtitle">Geração de Código de Barras e Etiquetas Comerciais</p>
+        
+        <div class="form-group">
+            <label for="tipo-roupa">Modelo do Produto</label>
+            <select id="tipo-roupa">
+                <option value="A102" data-nome="Camiseta de Algodão">Camiseta de Algodão (A102)</option>
+                <option value="J106" data-nome="Calça Jeans Premium">Calça Jeans Premium (J106)</option>
+                <option value="L105" data-nome="Casaco de Lã">Casaco de Lã de Inverno (L105)</option>
+                <option value="P103" data-nome="Jaqueta de Poliéster">Jaqueta de Poliéster (P103)</option>
+                <option value="I104" data-nome="Camisa de Linho">Camisa Fina de Linho (I104)</option>
+                <option value="S102" data-nome="Vestido de Seda">Vestido de Seda Leve (S102)</option>
+            </select>
         </div>
 
-        <div id="countdown-msg" class="countdown-alert">Aguardando próxima etiqueta...</div>
-
-        <div class="input-group">
-            <label>Código Identificado</label>
-            <input type="text" id="codigo-manual" placeholder="Aproxime da etiqueta..." readonly>
+        <div class="form-group">
+            <label for="preco-roupa">Preço de Venda (R$)</label>
+            <input type="number" id="preco-roupa" value="129.90" step="0.01">
         </div>
 
-        <div id="resultado-app" class="result-card">
-            <div class="result-header">
-                <h3 id="txt-nome" class="result-title">Nome da Peça</h3>
+        <button onclick="gerarEtiqueta()">Gerar Código Dinâmico</button>
+
+        <div id="etiqueta-wrapper" class="print-area-wrapper">
+            <div class="print-area">
+                <div class="brand-label">EcoTag Renner-Style</div>
+                <div class="desc-tag" id="lbl-nome">Produto</div>
+                
+                <div class="barcode-container">
+                    <svg id="barcode"></svg>
+                </div>
+                
+                <div class="price-tag" id="lbl-preco">R$ 0,00</div>
             </div>
-            
-            <div class="price-badge" id="txt-preco">R$ 0,00</div>
-
-            <div class="info-row"><span>ID Técnico:</span> <strong id="txt-id">-</strong></div>
-            <div class="info-row"><span>Composição:</span> <strong id="txt-material">-</strong></div>
-            <div class="info-row"><span>Expectativa:</span> <strong id="txt-duracao">-</strong></div>
-            <div id="txt-diagnostico" class="advice-box"></div>
+            <button class="btn-print" onclick="window.print()">🖨️ Imprimir Etiqueta</button>
         </div>
     </div>
 
     <script>
-        // Banco de dados simulando os produtos e preços padrão cadastrados no sistema Renner-Style
-        const bancoDadosLocal = {
-            "A102": { nome: "Camiseta Básica de Algodão", tecido: "Algodão Sustentável", anos: 2, preco: "R$ 89,90" },
-            "J106": { nome: "Calça Jeans Premium", tecido: "Jeans Denim", anos: 6, preco: "R$ 199,90" },
-            "L105": { nome: "Casaco de Inverno", tecido: "Lã Natural", anos: 5, preco: "R$ 259,90" },
-            "P103": { nome: "Jaqueta Corta-Vento", tecido: "Poliéster Sintético", anos: 3, preco: "R$ 149,90" },
-            "I104": { nome: "Camisa Social Elegance", tecido: "Linho Rústico", anos: 4, preco: "R$ 129,90" },
-            "S102": { nome: "Vestido de Gala Seda", tecido: "Seda Fina", anos: 2, preco: "R$ 319,90" }
-        };
+        function gerarEtiqueta() {
+            const combo = document.getElementById('tipo-roupa');
+            const codigo = combo.value;
+            const nomePeca = combo.options[combo.selectedIndex].getAttribute('data-nome');
+            const preco = parseFloat(document.getElementById('preco-roupa').value).toFixed(2).replace('.', ',');
 
-        let scannerPronto = true; // Controla se o app aceita um novo escaneamento
+            document.getElementById('lbl-nome').innerText = nomePeca;
+            document.getElementById('lbl-preco').innerText = 'R$ ' + preco;
 
-        // Função do BIP de confirmação (Áudio de caixa registradora de loja)
-        function darBip() {
-            try {
-                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                let oscillator = audioCtx.createOscillator();
-                let gainNode = audioCtx.createGain();
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 1150; // Tom agudo comercial
-                gainNode.gain.value = 0.15; // Volume confortável
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                
-                oscillator.start();
-                setTimeout(() => oscillator.stop(), 110);
-            } catch(e) { console.log("Áudio bloqueado pelo navegador."); }
+            // GERADOR DO CÓDIGO COM LINHAS MAIS GROSSAS E MARGENS (Quiet Zone) PARA FACILITAR A LEITURA DA CÂMARA
+            JsBarcode("#barcode", codigo, {
+                format: "CODE128",
+                width: 3,         // Barras mais largas para leitura imediata no monitor
+                height: 55,        // Altura perfeita para focar com o telemóvel
+                displayValue: true, 
+                fontSize: 15,
+                margin: 12,        // Espaço em branco obrigatório à volta do código de barras
+                background: "#ffffff",
+                lineColor: "#000000"
+            });
+
+            document.getElementById('etiqueta-wrapper').style.display = 'block';
         }
-
-        // Inicialização automática da câmera traseira
-        function iniciarCamera() {
-            Html5Qrcode.getCameras().then(devices => {
-                if (devices && devices.length) {
-                    let cameraId = devices[0].id;
-                    // Tenta forçar o uso da câmera de trás do smartphone
-                    for (let device of devices) {
-                        if (device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('traseira')) {
-                            cameraId = device.id;
-                            break;
-                        }
-                    }
-                    
-                    const html5QrCode = new Html5Qrcode("reader");
-                    html5QrCode.start(
-                        cameraId, 
-                        {
-                            fps: 25, // Leitura fluida frame-a-frame
-                            qrbox: (width, height) => { return { width: width * 0.8, height: height * 0.4 } }
-                        },
-                        (decodedText) => {
-                            let cod = decodedText.toUpperCase().trim();
-                            
-                            // Só processa se o scanner estiver liberado e o produto existir
-                            if (scannerPronto && bancoDadosLocal[cod]) {
-                                scannerPronto = false; // Bloqueia temporariamente para não "bipar" a mesma peça mil vezes seguidas
-                                
-                                darBip(); // 1. Dá o Bip imediatamente
-                                document.getElementById('codigo-manual').value = cod;
-                                exibirDados(cod); // 2. Exibe os dados e o VALOR
-                                
-                                // 3. Prepara o reset para poder escanear depois de novo (após 3 segundos)
-                                prepararProximaLeitura();
-                            }
-                        },
-                        (errorMessage) => { /* Busca silenciosa por linhas */ }
-                    ).catch(err => { console.error("Erro ao transmitir vídeo.", err); });
-                }
-            }).catch(err => { alert("Autorize o acesso à câmera e use HTTPS."); });
-        }
-
-        function exibirDados(cod) {
-            const pecaInfo = bancoDadosLocal[cod];
-            document.getElementById('txt-nome').innerText = pecaInfo.nome;
-            document.getElementById('txt-preco').innerText = pecaInfo.preco; // Mostra o valor correspondente
-            document.getElementById('txt-id').innerText = cod;
-            document.getElementById('txt-material').innerText = pecaInfo.tecido;
-            document.getElementById('txt-duracao').innerText = `${pecaInfo.anos} Anos`;
-
-            const diagnostico = document.getElementById('txt-diagnostico');
-            diagnostico.innerHTML = `✓ <strong>Leitura Concluída!</strong> Dados coletados com sucesso no banco Renner-Style.`;
-            diagnostico.style.color = "var(--success)";
-
-            document.getElementById('resultado-app').style.display = 'block';
-            document.getElementById('laser').style.backgroundColor = "var(--danger)"; // Muda a linha de mira para vermelho (bloqueado)
-        }
-
-        function prepararProximaLeitura() {
-            const msg = document.getElementById('countdown-msg');
-            msg.style.display = 'block';
-
-            // Aguarda 3 segundos com o resultado na tela, depois limpa tudo e reativa o scanner automaticamente
-            setTimeout(() => {
-                scannerPronto = true;
-                msg.style.display = 'none';
-                document.getElementById('laser').style.backgroundColor = "var(--success)"; // Linha volta a ficar verde (pronto)
-                document.getElementById('codigo-manual').value = "";
-                document.getElementById('resultado-app').style.display = 'none'; // Esconde o card antigo para aguardar a nova peça
-            }, 3000); 
-        }
-
-        window.addEventListener('DOMContentLoaded', iniciarCamera);
     </script>
 </body>
 </html>
