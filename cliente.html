@@ -3,117 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoTag - Área do Cliente</title>
+    <title>EcoTag - Scanner Premium</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
-            --bg: #121212;
-            --surface: #1e1e1e;
+            --bg: #0a0a0a;
+            --surface: #161616;
             --primary: #ffffff;
-            --text-muted: #a0a0a0;
-            --border: #333333;
+            --text-muted: #888888;
+            --border: #222222;
             --success: #00e676;
             --danger: #ff1744;
         }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            background-color: var(--bg); 
-            color: #ffffff;
-            margin: 0; padding: 20px;
-            display: flex; justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: var(--bg); color: #ffffff; margin: 0; padding: 20px;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
         }
 
         .app-container {
-            width: 100%; max-width: 440px; background: var(--surface);
-            padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            box-sizing: border-box;
+            width: 100%; max-width: 420px; background: var(--surface);
+            padding: 30px; border-radius: 24px; border: 1px solid var(--border);
+            box-sizing: border-box; text-align: center;
         }
 
-        h2 { font-size: 22px; font-weight: 700; text-align: center; margin-top: 0; }
-        p.desc { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 25px; }
+        h2 { font-size: 20px; font-weight: 700; margin: 0 0 5px 0; letter-spacing: -0.5px; }
+        p.desc { color: var(--text-muted); font-size: 13px; margin: 0 0 25px 0; }
 
-        /* Container do Scanner Real */
-        .reader-wrapper {
-            position: relative;
-            width: 100%;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            border: 2px solid var(--border);
+        /* ÁREA DE ESCANEAMENTO TOTALMENTE LIVRE E LIMPA */
+        .scanner-container {
+            position: relative; width: 100%; aspect-ratio: 4/3;
+            background: #000; border-radius: 16px; overflow: hidden;
+            border: 1px solid var(--border); margin-bottom: 25px;
         }
-        #reader { width: 100%; }
         
-        /* Ajustes internos para limpar botões feios da biblioteca e deixar nível Renner */
-        #reader button {
-            background: var(--primary); color: #000; font-weight: bold;
-            padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; margin: 10px;
+        #reader { width: 100% !important; height: 100% !important; border: none !important; }
+        
+        /* Remove todos os textos, botões e bordas padrão da biblioteca para ficar visual limpo */
+        #reader__dashboard, #reader__status_span, #reader img { display: none !important; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+
+        /* Linha de Scanner (Mira) Estilo Renner */
+        .scanner-laser {
+            position: absolute; top: 50%; left: 5%; width: 90%; height: 2px;
+            background-color: var(--success); box-shadow: 0 0 12px var(--success);
+            animation: scanAnimation 2.5s infinite ease-in-out; pointer-events: none; z-index: 10;
         }
-        #reader select {
-            padding: 8px; background: #2a2a2a; color: #fff; border: 1px solid var(--border); border-radius: 6px; margin: 10px;
+        @keyframes scanAnimation {
+            0% { top: 15%; }
+            50% { top: 85%; }
+            100% { top: 15%; }
         }
 
-        .input-group { margin-bottom: 18px; text-align: left; }
-        label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
         
         input {
-            width: 100%; padding: 14px; border-radius: 10px; background: #2a2a2a; border: 1px solid var(--border);
+            width: 100%; padding: 14px; border-radius: 12px; background: #222; border: 1px solid var(--border);
             color: #fff; font-size: 16px; text-align: center; box-sizing: border-box; font-weight: bold;
         }
-
-        .btn-analise {
-            width: 100%; padding: 15px; border-radius: 12px; background: var(--primary); color: #000;
-            font-weight: 700; font-size: 15px; border: none; cursor: pointer;
-        }
+        input:focus { border-color: #555; outline: none; }
 
         .result-card {
             display: none; margin-top: 25px; padding: 20px; border-radius: 16px;
-            background: #252525; border: 1px solid var(--border); text-align: left;
+            background: #1d1d1d; border: 1px solid var(--border); text-align: left;
         }
         .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .result-title { font-size: 18px; font-weight: 700; margin: 0; }
-        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .status-badge.verde { background: rgba(0,230,118,0.15); color: var(--success); }
-        .status-badge.vermelho { background: rgba(255,23,68,0.15); color: var(--danger); }
+        .result-title { font-size: 16px; font-weight: 700; margin: 0; }
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .status-badge.verde { background: rgba(0,230,118,0.12); color: var(--success); }
+        .status-badge.vermelho { background: rgba(255,23,68,0.12); color: var(--danger); }
 
-        .info-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: var(--text-muted); }
+        .info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
         .info-row strong { color: #fff; }
-        .advice-box { margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); font-size: 13px; line-height: 1.5; }
+        .advice-box { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 13px; line-height: 1.4; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
         <h2>📱 Consulta EcoTag</h2>
-        <p class="desc">Dê permissão à câmera e aponte para o código impresso ou na tela.</p>
+        <p class="desc">Aponte para o código de barras gerado</p>
 
-        <div class="reader-wrapper">
+        <div class="scanner-container">
             <div id="reader"></div>
+            <div class="scanner-laser"></div>
         </div>
 
         <div class="input-group">
-            <label>Código Detectado</label>
-            <input type="text" id="codigo-manual" maxlength="4" placeholder="AGUARDANDO LEITURA..." style="letter-spacing: 3px; text-transform: uppercase;" readonly>
+            <label>Código Identificado</label>
+            <input type="text" id="codigo-manual" placeholder="Aproxime da etiqueta..." readonly>
         </div>
-
-        <div class="input-group">
-            <label>Meses sem uso no armário</label>
-            <input type="number" id="meses-armario" value="12" min="0">
-        </div>
-
-        <button class="btn-analise" onclick="processarValidade()">Analisar Sustentabilidade</button>
 
         <div id="resultado-app" class="result-card">
             <div class="result-header">
                 <h3 id="txt-nome" class="result-title">Nome da Peça</h3>
                 <span id="status-badge" class="status-badge verde">Status OK</span>
             </div>
-            
             <div class="info-row"><span>ID Técnico:</span> <strong id="txt-id">-</strong></div>
             <div class="info-row"><span>Composição:</span> <strong id="txt-material">-</strong></div>
-            <div class="info-row"><span>Expectativa de Vida:</span> <strong id="txt-duracao">-</strong></div>
-            
+            <div class="info-row"><span>Expectativa:</span> <strong id="txt-duracao">-</strong></div>
             <div id="txt-diagnostico" class="advice-box"></div>
         </div>
     </div>
@@ -128,85 +118,86 @@
             "S102": { nome: "Vestido de Gala", tecido: "Seda Fina", anos: 2 }
         };
 
-        // --- CONFIGURAÇÃO DO SCANNER DE CÂMERA REAL ---
-        function onScanSuccess(decodedText, decodedResult) {
-            // Quando a câmera ler o código de barras
-            let codigoLimpo = decodedText.toUpperCase().trim();
-            
-            if (bancoDadosLocal[codigoLimpo]) {
-                document.getElementById('codigo-manual').value = codigoLimpo;
+        // Função do BIP de confirmação (Áudio gerado via código)
+        function darBip() {
+            try {
+                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let oscillator = audioCtx.createOscillator();
+                let gainNode = audioCtx.createGain();
                 
-                // Emite um feedback sonoro de bip (opcional, nível Renner)
-                playBeep();
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 1100; // Tom agudo de caixa de loja
+                gainNode.gain.value = 0.1; // Volume suave
                 
-                // Processa a validade automaticamente
-                processarValidade();
-            }
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 120); // Duração do bip
+            } catch(e) { console.log("Áudio bloqueado temporariamente."); }
         }
 
-        function onScanFailure(error) {
-            // Falhas de detecção frame-a-frame são normais enquanto a câmera procura as linhas
+        // Inicialização direta e automática da câmera traseira (sem menus)
+        function iniciarCamera() {
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length) {
+                    // Seleciona preferencialmente a câmera traseira ("environment")
+                    let cameraId = devices[0].id;
+                    for (let device of devices) {
+                        if (device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('traseira')) {
+                            cameraId = device.id;
+                            break;
+                        }
+                    }
+                    
+                    const html5QrCode = new Html5Qrcode("reader");
+                    html5QrCode.start(
+                        cameraId, 
+                        {
+                            fps: 20,
+                            qrbox: (width, height) => { return { width: width * 0.8, height: height * 0.4 } } // Caixa de foco retangular para códigos de barras
+                        },
+                        (decodedText) => {
+                            let cod = decodedText.toUpperCase().trim();
+                            if (bancoDadosLocal[cod] && document.getElementById('codigo-manual').value !== cod) {
+                                darBip(); // Executa o som instantâneo
+                                document.getElementById('codigo-manual').value = cod;
+                                exibirDados(cod);
+                            }
+                        },
+                        (errorMessage) => { /* Busca contínua e silenciosa */ }
+                    ).catch(err => {
+                        console.error("Erro ao iniciar transmissão do vídeo.", err);
+                    });
+                } else {
+                    alert("Nenhuma câmera encontrada.");
+                }
+            }).catch(err => {
+                alert("Erro de permissão: Acesse via HTTPS ou autorize a câmera nas configurações do navegador.");
+            });
         }
 
-        // Inicializa o Scanner apontando para os tipos de código de barras comerciais (CODE 128)
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { 
-                fps: 15, 
-                qrbox: { width: 300, height: 120 }, // Formato retangular ideal para código de barras comum
-                formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128 ]
-            },
-            /* verbose= */ false
-        );
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-
-        // Função auxiliar de efeito sonoro de "Bip" de caixa
-        function playBeep() {
-            let context = new (window.AudioContext || window.webkitAudioContext)();
-            let osc = context.createOscillator();
-            osc.type = "sine";
-            osc.frequency.value = 1000;
-            osc.connect(context.destination);
-            osc.start();
-            setTimeout(() => osc.stop(), 100);
-        }
-
-        // --- ALGORITMO DE VALIDADE TÊXTIL ---
-        function processarValidade() {
-            const codDigitado = document.getElementById('codigo-manual').value.toUpperCase().trim();
-            const mesesParada = parseInt(document.getElementById('meses-armario').value) || 0;
-
-            if (!bancoDadosLocal[codDigitado]) {
-                alert("Por favor, escaneie ou insira um código válido primeiro.");
-                return;
-            }
-
-            const pecaInfo = bancoDadosLocal[codDigitado];
-            const vidaUtilMeses = pecaInfo.anos * 12;
-            const limiteAlerta = vidaUtilMeses * 0.25;
-
+        function exibirDados(cod) {
+            const pecaInfo = bancoDadosLocal[cod];
             document.getElementById('txt-nome').innerText = pecaInfo.nome;
-            document.getElementById('txt-id').innerText = codDigitado;
+            document.getElementById('txt-id').innerText = cod;
             document.getElementById('txt-material').innerText = pecaInfo.tecido;
             document.getElementById('txt-duracao').innerText = `${pecaInfo.anos} Anos`;
 
             const badge = document.getElementById('status-badge');
             const diagnostico = document.getElementById('txt-diagnostico');
 
-            if (mesesParada >= limiteAlerta) {
-                badge.className = "status-badge vermelho";
-                badge.innerText = "Alerta Gaveta";
-                diagnostico.innerHTML = `⚠️ <strong>Roupa ociosa detectada.</strong> Esta peça está parada há ${mesesParada} meses. O limite tolerável para este tipo de malha era de ${limiteAlerta} meses. Considere repassar!`;
-                diagnostico.style.color = "#ff1744";
-            } else {
-                badge.className = "status-badge verde";
-                badge.innerText = "Uso Saudável";
-                diagnostico.innerHTML = `✓ <strong>Ciclo Sustentável ativo!</strong> Guardada há ${mesesParada} meses. O limite de segurança para este material é de ${limiteAlerta} meses. Continue aproveitando sua peça.`;
-                diagnostico.style.color = "#00e676";
-            }
+            // Exemplo estático considerando 12 meses parado por padrão
+            badge.className = "status-badge verde";
+            badge.innerText = "Monitorado";
+            diagnostico.innerHTML = `✓ <strong>Leitura realizada com sucesso!</strong> Item pronto para verificação no inventário inteligente EcoTag.`;
+            diagnostico.style.color = "var(--success)";
 
             document.getElementById('resultado-app').style.display = 'block';
         }
+
+        // Inicia automaticamente ao carregar a página
+        window.addEventListener('DOMContentLoaded', iniciarCamera);
     </script>
 </body>
 </html>
