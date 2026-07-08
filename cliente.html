@@ -3,147 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoTag ERP - Painel do Fabricante</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <title>EcoTag - Terminal de Consulta</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
-            --primary: #0a0a0a;
-            --primary-hover: #262626;
-            --bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text: #1a1a1a;
-            --border: #e5e5e5;
+            --bg: #0d0d0d;
+            --surface: #1a1a1a;
+            --primary: #ffffff;
+            --text-muted: #999999;
+            --border: #292929;
+            --success: #00e676;
+            --accent: #2979ff;
         }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
-            background-color: var(--bg); 
-            margin: 0; padding: 40px 20px; color: var(--text); 
-            display: flex; justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: var(--bg); color: #ffffff; margin: 0; padding: 20px;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
         }
 
-        .container { 
-            width: 100%; max-width: 500px; background: var(--card-bg); 
-            padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            border: 1px solid var(--border);
+        .app-container {
+            width: 100%; max-width: 430px; background: var(--surface);
+            padding: 30px; border-radius: 24px; border: 1px solid var(--border);
+            box-sizing: border-box; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.4);
         }
 
-        h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
-        p.subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
-        .form-group { text-align: left; margin-bottom: 20px; }
-        label { display: block; font-size: 13px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
+        h2 { font-size: 22px; font-weight: 800; margin: 0 0 5px 0; letter-spacing: -0.5px; }
+        p.desc { color: var(--text-muted); font-size: 13px; margin: 0 0 25px 0; }
+
+        /* Área Limpa de Câmera */
+        .scanner-container {
+            position: relative; width: 100%; aspect-ratio: 4/3;
+            background: #000; border-radius: 16px; overflow: hidden;
+            border: 1px solid var(--border); margin-bottom: 20px;
+        }
         
-        select, input { 
-            width: 100%; padding: 14px; border-radius: 8px; border: 1px solid var(--border); 
-            font-size: 15px; box-sizing: border-box; background: #fafafa;
+        #reader { width: 100% !important; height: 100% !important; border: none !important; }
+        #reader__dashboard, #reader__status_span, #reader img { display: none !important; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+
+        /* Laser de Mira Dinâmico */
+        .scanner-laser {
+            position: absolute; top: 50%; left: 5%; width: 90%; height: 2px;
+            background-color: var(--success); box-shadow: 0 0 14px var(--success);
+            animation: scanAnimation 2s infinite ease-in-out; pointer-events: none; z-index: 10;
+        }
+        @keyframes scanAnimation {
+            0% { top: 15%; }
+            50% { top: 85%; }
+            100% { top: 15%; }
         }
 
-        button { 
-            width: 100%; padding: 15px; border-radius: 8px; background-color: var(--primary); 
-            color: white; border: none; font-weight: 600; font-size: 15px; cursor: pointer; margin-top: 10px;
+        /* Botão Renner para Escanear Novamente */
+        .btn-next {
+            display: none; width: 100%; padding: 15px; margin-bottom: 20px;
+            background: var(--accent); color: white; border: none; font-weight: 700;
+            border-radius: 12px; font-size: 15px; cursor: pointer; transition: opacity 0.2s;
         }
-        button:hover { background-color: var(--primary-hover); }
-        
-        /* Área da Etiqueta Física Otimizada */
-        .print-area-wrapper { display: none; margin-top: 35px; text-align: center; }
-        
-        .print-area {
-            background: white;
-            border: 1px dashed #000;
-            padding: 10px;
-            width: 62mm; /* Largura padrão de etiquetas de gôndola/têxtil */
-            margin: 0 auto 15px auto;
-            box-sizing: border-box;
-            text-align: center;
-            color: #000;
+        .btn-next:hover { opacity: 0.9; }
+
+        /* Card de Informações da Roupa */
+        .result-card {
+            display: none; margin-top: 15px; padding: 22px; border-radius: 16px;
+            background: #222222; border: 1px solid var(--border); text-align: left;
+            animation: slideUp 0.3s ease-out;
         }
-        .brand-label { font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; }
-        .desc-tag { font-size: 11px; font-weight: 600; margin: 2px 0; text-transform: uppercase; }
+        @keyframes slideUp { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .result-title { font-size: 18px; font-weight: 800; margin: 0 0 2px 0; text-transform: uppercase; }
+        .result-color { font-size: 13px; color: #a0a0a0; margin-bottom: 15px; font-weight: 500; }
         
-        /* Container do SVG do Código de Barras */
-        .barcode-container { width: 100%; margin: 5px 0; background: #fff; }
-        .barcode-container svg { width: 100%; max-height: 65px; }
+        .price-badge { font-size: 28px; font-weight: 900; color: #ffffff; margin-bottom: 18px; letter-spacing: -0.5px; }
 
-        .price-tag { font-size: 20px; font-weight: 800; margin-top: 5px; }
-
-        .btn-print { background-color: #444; }
-
-        /* Regras rígidas de Impressão (Esconde tudo exceto a etiqueta de 62mm) */
-        @media print {
-            body * { visibility: hidden; }
-            .print-area, .print-area * { visibility: visible; }
-            .print-area { 
-                position: absolute; left: 0; top: 0; 
-                width: 62mm; border: none; padding: 0; margin: 0;
-            }
-            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
+        .info-row strong { color: #fff; }
+        
+        .advice-box { 
+            margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); 
+            font-size: 13px; line-height: 1.4; color: var(--success); font-weight: 500;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>🏭 EcoTag Enterprise</h2>
-        <p class="subtitle">Geração de Código de Barras e Etiquetas Comerciais</p>
-        
-        <div class="form-group">
-            <label for="tipo-roupa">Modelo do Produto</label>
-            <select id="tipo-roupa">
-                <option value="A102" data-nome="Camiseta de Algodão">Camiseta de Algodão (A102)</option>
-                <option value="J106" data-nome="Calça Jeans Premium">Calça Jeans Premium (J106)</option>
-                <option value="L105" data-nome="Casaco de Lã">Casaco de Lã de Inverno (L105)</option>
-                <option value="P103" data-nome="Jaqueta de Poliéster">Jaqueta de Poliéster (P103)</option>
-                <option value="I104" data-nome="Camisa de Linho">Camisa Fina de Linho (I104)</option>
-                <option value="S102" data-nome="Vestido de Seda">Vestido de Seda Leve (S102)</option>
-            </select>
+    <div class="app-container">
+        <h2>📱 Consulta EcoTag</h2>
+        <p class="desc">Aponte para o código de barras da etiqueta</p>
+
+        <div class="scanner-container">
+            <div id="reader"></div>
+            <div class="scanner-laser" id="laser"></div>
         </div>
 
-        <div class="form-group">
-            <label for="preco-roupa">Preço de Venda (R$)</label>
-            <input type="number" id="preco-roupa" value="129.90" step="0.01">
-        </div>
+        <button id="btn-reset" class="btn-next" onclick="liberarProximoEscaneamento()">🔄 Escanear Próxima Peça</button>
 
-        <button onclick="gerarEtiqueta()">Gerar Código Dinâmico</button>
+        <div id="resultado-app" class="result-card">
+            <h3 id="txt-nome" class="result-title">Nome do Produto</h3>
+            <div id="txt-cor" class="result-color">Cor: Carregando...</div>
+            
+            <div class="price-badge" id="txt-preco">R$ 0,00</div>
 
-        <div id="etiqueta-wrapper" class="print-area-wrapper">
-            <div class="print-area">
-                <div class="brand-label">EcoTag Renner-Style</div>
-                <div class="desc-tag" id="lbl-nome">Produto</div>
-                
-                <div class="barcode-container">
-                    <svg id="barcode"></svg>
-                </div>
-                
-                <div class="price-tag" id="lbl-preco">R$ 0,00</div>
-            </div>
-            <button class="btn-print" onclick="window.print()">🖨️ Imprimir Etiqueta</button>
+            <div class="info-row"><span>SKU Técnico:</span> <strong id="txt-id">-</strong></div>
+            <div class="info-row"><span>Composição:</span> <strong id="txt-material">-</strong></div>
+            <div class="info-row"><span>Ciclo de Vida:</span> <strong id="txt-duracao">-</strong></div>
+            <div id="txt-diagnostico" class="advice-box"></div>
         </div>
     </div>
 
     <script>
-        function gerarEtiqueta() {
-            const combo = document.getElementById('tipo-roupa');
-            const codigo = combo.value;
-            const nomePeca = combo.options[combo.selectedIndex].getAttribute('data-nome');
-            const preco = parseFloat(document.getElementById('preco-roupa').value).toFixed(2).replace('.', ',');
+        // Banco de Dados Sincronizado com o Painel de Fabricação
+        const bancoDadosLocal = {
+            "A102": { nome: "Camiseta Básica", cor: "Preto Sólido", tecido: "Algodão Sustentável 100%", anos: 2, preco: "R$ 89,90" },
+            "A103": { nome: "Camiseta Básica", cor: "Branco Off-White", tecido: "Algodão Sustentável 100%", anos: 2, preco: "R$ 89,90" },
+            "A104": { nome: "Camiseta Básica", cor: "Azul Marinho", tecido: "Algodão Sustentável 100%", anos: 2, preco: "R$ 89,90" },
+            
+            "J106": { nome: "Calça Jeans Slim", cor: "Azul Denim Tradicional", tecido: "Jeans Algodão & Elastano", anos: 6, preco: "R$ 199,90" },
+            "J107": { nome: "Calça Jeans Slim", cor: "Preto Estonado", tecido: "Jeans Heavy Denim", anos: 6, preco: "R$ 219,90" },
+            
+            "L105": { nome: "Casaco de Lã Winter", cor: "Marrom Camel", tecido: "Lã Fria Premium", anos: 5, preco: "R$ 299,90" },
+            "L106": { nome: "Casaco de Lã Winter", cor: "Cinza Mescla", tecido: "Lã Fria Premium", anos: 5, preco: "R$ 299,90" },
+            
+            "P103": { nome: "Jaqueta Corta-Vento", cor: "Verde Militar", tecido: "Poliéster Impermeável", anos: 3, preco: "R$ 159,90" },
+            "P104": { nome: "Jaqueta Corta-Vento", cor: "Preto Fosco", tecido: "Poliéster Impermeável", anos: 3, preco: "R$ 159,90" },
+            
+            "I104": { nome: "Camisa Casual Linho", cor: "Areia Natural", tecido: "Linho Puro Rústico", anos: 4, preco: "R$ 149,90" },
+            "I105": { nome: "Camisa Casual Linho", cor: "Azul Celeste", tecido: "Linho Puro Rústico", anos: 4, preco: "R$ 149,90" },
+            
+            "S102": { nome: "Vestido Midi Fluido", cor: "Vermelho Rubi", tecido: "Seda Acetinada Genuína", anos: 2, preco: "R$ 349,90" },
+            "S103": { nome: "Vestido Midi Fluido", cor: "Estampa Floral Dark", tecido: "Seda Acetinada Genuína", anos: 2, preco: "R$ 369,90" }
+        };
 
-            document.getElementById('lbl-nome').innerText = nomePeca;
-            document.getElementById('lbl-preco').innerText = 'R$ ' + preco;
+        let leitorAtivo = true;
 
-            // GERADOR DO CÓDIGO COM LINHAS MAIS GROSSAS E MARGENS (Quiet Zone) PARA FACILITAR A LEITURA DA CÂMARA
-            JsBarcode("#barcode", codigo, {
-                format: "CODE128",
-                width: 3,         // Barras mais largas para leitura imediata no monitor
-                height: 55,        // Altura perfeita para focar com o telemóvel
-                displayValue: true, 
-                fontSize: 15,
-                margin: 12,        // Espaço em branco obrigatório à volta do código de barras
-                background: "#ffffff",
-                lineColor: "#000000"
-            });
-
-            document.getElementById('etiqueta-wrapper').style.display = 'block';
+        // Som de Confirmação BIP Comercial
+        function darBip() {
+            try {
+                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let oscillator = audioCtx.createOscillator();
+                let gainNode = audioCtx.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 1180; 
+                gainNode.gain.value = 0.15; 
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 105);
+            } catch(e) { console.log("Áudio pendente de clique."); }
         }
+
+        function iniciarCamera() {
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length) {
+                    let cameraId = devices[0].id;
+                    for (let device of devices) {
+                        const label = device.label.toLowerCase();
+                        if (label.includes('back') || label.includes('traseira') || label.includes('ambiente')) {
+                            cameraId = device.id;
+                            break;
+                        }
+                    }
+                    
+                    const html5QrCode = new Html5Qrcode("reader");
+                    html5QrCode.start(
+                        cameraId, 
+                        {
+                            fps: 30,
+                            formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.EAN_13 ],
+                            qrbox: (width, height) => { return { width: Math.min(width * 0.85, 320), height: Math.min(height * 0.45, 140) } }
+                        },
+                        (decodedText) => {
+                            let cod = decodedText.toUpperCase().trim();
+                            
+                            // Apenas processa se o leitor estiver destravado e encontrar no catálogo
+                            if (leitorAtivo && bancoDadosLocal[cod]) {
+                                leitorAtivo = false; // Trava o scanner para reter a informação na tela
+                                
+                                darBip();
+                                exibirDados(cod);
+                            }
+                        },
+                        (errorMessage) => { /* Captura contínua */ }
+                    ).catch(err => { console.error(err); });
+                }
+            }).catch(err => { alert("Permita o acesso à câmera."); });
+        }
+
+        function exibirDados(cod) {
+            const pecaInfo = bancoDadosLocal[cod];
+            document.getElementById('txt-nome').innerText = pecaInfo.nome;
+            document.getElementById('txt-cor').innerText = "COR: " + pecaInfo.cor;
+            document.getElementById('txt-preco').innerText = pecaInfo.preco; 
+            document.getElementById('txt-id').innerText = cod;
+            document.getElementById('txt-material').innerText = pecaInfo.tecido;
+            document.getElementById('txt-duracao').innerText = `${pecaInfo.anos} Anos`;
+
+            document.getElementById('txt-diagnostico').innerHTML = `✓ <strong>Leitura realizada com sucesso!</strong> Produto validado no inventário EcoTag.`;
+            
+            // Exibe o painel de resultados e o botão de destravar
+            document.getElementById('resultado-app').style.display = 'block';
+            document.getElementById('btn-reset').style.display = 'block';
+            document.getElementById('laser').style.backgroundColor = "#ff1744"; // Laser fica vermelho sinalizando pausa
+        }
+
+        function liberarProximoEscaneamento() {
+            leitorAtivo = true; // Libera o scanner para aceitar novos bips
+            
+            // Reseta e limpa a interface visual para aguardar a próxima leitura
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('resultado-app').style.display = 'none';
+            document.getElementById('laser').style.backgroundColor = "var(--success)"; // Laser volta a ficar verde
+        }
+
+        window.addEventListener('DOMContentLoaded', iniciarCamera);
     </script>
 </body>
 </html>
