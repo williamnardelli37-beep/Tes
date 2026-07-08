@@ -40,11 +40,11 @@
         
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         
-        /* Remove todos os textos, botões e bordas padrão da biblioteca para ficar visual limpo */
+        /* Remove botões e textos nativos poluídos da biblioteca */
         #reader__dashboard, #reader__status_span, #reader img { display: none !important; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
 
-        /* Linha de Scanner (Mira) Estilo Renner */
+        /* Linha de Scanner (Mira) */
         .scanner-laser {
             position: absolute; top: 50%; left: 5%; width: 90%; height: 2px;
             background-color: var(--success); box-shadow: 0 0 12px var(--success);
@@ -56,6 +56,12 @@
             100% { top: 15%; }
         }
 
+        /* Aviso de "Próxima leitura liberada" */
+        .countdown-alert {
+            display: none; background: rgba(0, 230, 118, 0.15); color: var(--success);
+            padding: 8px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-bottom: 15px;
+        }
+
         .input-group { margin-bottom: 20px; text-align: left; }
         label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
         
@@ -63,17 +69,17 @@
             width: 100%; padding: 14px; border-radius: 12px; background: #222; border: 1px solid var(--border);
             color: #fff; font-size: 16px; text-align: center; box-sizing: border-box; font-weight: bold;
         }
-        input:focus { border-color: #555; outline: none; }
 
+        /* Card de Resultado Nível Renner */
         .result-card {
             display: none; margin-top: 25px; padding: 20px; border-radius: 16px;
             background: #1d1d1d; border: 1px solid var(--border); text-align: left;
         }
         .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .result-title { font-size: 16px; font-weight: 700; margin: 0; }
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        .status-badge.verde { background: rgba(0,230,118,0.12); color: var(--success); }
-        .status-badge.vermelho { background: rgba(255,23,68,0.12); color: var(--danger); }
+        
+        /* Preço destacado em tamanho maior */
+        .price-badge { font-size: 22px; font-weight: 800; color: #fff; margin: 10px 0; display: block; }
 
         .info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
         .info-row strong { color: #fff; }
@@ -88,8 +94,10 @@
 
         <div class="scanner-container">
             <div id="reader"></div>
-            <div class="scanner-laser"></div>
+            <div class="scanner-laser" id="laser"></div>
         </div>
+
+        <div id="countdown-msg" class="countdown-alert">Aguardando próxima etiqueta...</div>
 
         <div class="input-group">
             <label>Código Identificado</label>
@@ -99,8 +107,10 @@
         <div id="resultado-app" class="result-card">
             <div class="result-header">
                 <h3 id="txt-nome" class="result-title">Nome da Peça</h3>
-                <span id="status-badge" class="status-badge verde">Status OK</span>
             </div>
+            
+            <div class="price-badge" id="txt-preco">R$ 0,00</div>
+
             <div class="info-row"><span>ID Técnico:</span> <strong id="txt-id">-</strong></div>
             <div class="info-row"><span>Composição:</span> <strong id="txt-material">-</strong></div>
             <div class="info-row"><span>Expectativa:</span> <strong id="txt-duracao">-</strong></div>
@@ -109,16 +119,19 @@
     </div>
 
     <script>
+        // Banco de dados simulando os produtos e preços padrão cadastrados no sistema Renner-Style
         const bancoDadosLocal = {
-            "A102": { nome: "Camiseta Básica", tecido: "Algodão Sustentável", anos: 2 },
-            "J106": { nome: "Calça Jeans Premium", tecido: "Jeans Denim", anos: 6 },
-            "L105": { nome: "Casaco de Inverno", tecido: "Lã Natural", anos: 5 },
-            "P103": { nome: "Jaqueta Corta-Vento", tecido: "Poliéster Sintético", anos: 3 },
-            "I104": { nome: "Camisa Social", tecido: "Linho Rústico", anos: 4 },
-            "S102": { nome: "Vestido de Gala", tecido: "Seda Fina", anos: 2 }
+            "A102": { nome: "Camiseta Básica de Algodão", tecido: "Algodão Sustentável", anos: 2, preco: "R$ 89,90" },
+            "J106": { nome: "Calça Jeans Premium", tecido: "Jeans Denim", anos: 6, preco: "R$ 199,90" },
+            "L105": { nome: "Casaco de Inverno", tecido: "Lã Natural", anos: 5, preco: "R$ 259,90" },
+            "P103": { nome: "Jaqueta Corta-Vento", tecido: "Poliéster Sintético", anos: 3, preco: "R$ 149,90" },
+            "I104": { nome: "Camisa Social Elegance", tecido: "Linho Rústico", anos: 4, preco: "R$ 129,90" },
+            "S102": { nome: "Vestido de Gala Seda", tecido: "Seda Fina", anos: 2, preco: "R$ 319,90" }
         };
 
-        // Função do BIP de confirmação (Áudio gerado via código)
+        let scannerPronto = true; // Controla se o app aceita um novo escaneamento
+
+        // Função do BIP de confirmação (Áudio de caixa registradora de loja)
         function darBip() {
             try {
                 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -126,23 +139,23 @@
                 let gainNode = audioCtx.createGain();
                 
                 oscillator.type = 'sine';
-                oscillator.frequency.value = 1100; // Tom agudo de caixa de loja
-                gainNode.gain.value = 0.1; // Volume suave
+                oscillator.frequency.value = 1150; // Tom agudo comercial
+                gainNode.gain.value = 0.15; // Volume confortável
                 
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
                 
                 oscillator.start();
-                setTimeout(() => oscillator.stop(), 120); // Duração do bip
-            } catch(e) { console.log("Áudio bloqueado temporariamente."); }
+                setTimeout(() => oscillator.stop(), 110);
+            } catch(e) { console.log("Áudio bloqueado pelo navegador."); }
         }
 
-        // Inicialização direta e automática da câmera traseira (sem menus)
+        // Inicialização automática da câmera traseira
         function iniciarCamera() {
             Html5Qrcode.getCameras().then(devices => {
                 if (devices && devices.length) {
-                    // Seleciona preferencialmente a câmera traseira ("environment")
                     let cameraId = devices[0].id;
+                    // Tenta forçar o uso da câmera de trás do smartphone
                     for (let device of devices) {
                         if (device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('traseira')) {
                             cameraId = device.id;
@@ -154,49 +167,60 @@
                     html5QrCode.start(
                         cameraId, 
                         {
-                            fps: 20,
-                            qrbox: (width, height) => { return { width: width * 0.8, height: height * 0.4 } } // Caixa de foco retangular para códigos de barras
+                            fps: 25, // Leitura fluida frame-a-frame
+                            qrbox: (width, height) => { return { width: width * 0.8, height: height * 0.4 } }
                         },
                         (decodedText) => {
                             let cod = decodedText.toUpperCase().trim();
-                            if (bancoDadosLocal[cod] && document.getElementById('codigo-manual').value !== cod) {
-                                darBip(); // Executa o som instantâneo
+                            
+                            // Só processa se o scanner estiver liberado e o produto existir
+                            if (scannerPronto && bancoDadosLocal[cod]) {
+                                scannerPronto = false; // Bloqueia temporariamente para não "bipar" a mesma peça mil vezes seguidas
+                                
+                                darBip(); // 1. Dá o Bip imediatamente
                                 document.getElementById('codigo-manual').value = cod;
-                                exibirDados(cod);
+                                exibirDados(cod); // 2. Exibe os dados e o VALOR
+                                
+                                // 3. Prepara o reset para poder escanear depois de novo (após 3 segundos)
+                                prepararProximaLeitura();
                             }
                         },
-                        (errorMessage) => { /* Busca contínua e silenciosa */ }
-                    ).catch(err => {
-                        console.error("Erro ao iniciar transmissão do vídeo.", err);
-                    });
-                } else {
-                    alert("Nenhuma câmera encontrada.");
+                        (errorMessage) => { /* Busca silenciosa por linhas */ }
+                    ).catch(err => { console.error("Erro ao transmitir vídeo.", err); });
                 }
-            }).catch(err => {
-                alert("Erro de permissão: Acesse via HTTPS ou autorize a câmera nas configurações do navegador.");
-            });
+            }).catch(err => { alert("Autorize o acesso à câmera e use HTTPS."); });
         }
 
         function exibirDados(cod) {
             const pecaInfo = bancoDadosLocal[cod];
             document.getElementById('txt-nome').innerText = pecaInfo.nome;
+            document.getElementById('txt-preco').innerText = pecaInfo.preco; // Mostra o valor correspondente
             document.getElementById('txt-id').innerText = cod;
             document.getElementById('txt-material').innerText = pecaInfo.tecido;
             document.getElementById('txt-duracao').innerText = `${pecaInfo.anos} Anos`;
 
-            const badge = document.getElementById('status-badge');
             const diagnostico = document.getElementById('txt-diagnostico');
-
-            // Exemplo estático considerando 12 meses parado por padrão
-            badge.className = "status-badge verde";
-            badge.innerText = "Monitorado";
-            diagnostico.innerHTML = `✓ <strong>Leitura realizada com sucesso!</strong> Item pronto para verificação no inventário inteligente EcoTag.`;
+            diagnostico.innerHTML = `✓ <strong>Leitura Concluída!</strong> Dados coletados com sucesso no banco Renner-Style.`;
             diagnostico.style.color = "var(--success)";
 
             document.getElementById('resultado-app').style.display = 'block';
+            document.getElementById('laser').style.backgroundColor = "var(--danger)"; // Muda a linha de mira para vermelho (bloqueado)
         }
 
-        // Inicia automaticamente ao carregar a página
+        function prepararProximaLeitura() {
+            const msg = document.getElementById('countdown-msg');
+            msg.style.display = 'block';
+
+            // Aguarda 3 segundos com o resultado na tela, depois limpa tudo e reativa o scanner automaticamente
+            setTimeout(() => {
+                scannerPronto = true;
+                msg.style.display = 'none';
+                document.getElementById('laser').style.backgroundColor = "var(--success)"; // Linha volta a ficar verde (pronto)
+                document.getElementById('codigo-manual').value = "";
+                document.getElementById('resultado-app').style.display = 'none'; // Esconde o card antigo para aguardar a nova peça
+            }, 3000); 
+        }
+
         window.addEventListener('DOMContentLoaded', iniciarCamera);
     </script>
 </body>
