@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTag - Área do Cliente</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --primary: #ffffff;
+            --text-muted: #a0a0a0;
+            --border: #333333;
+            --success: #00e676;
+            --danger: #ff1744;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background-color: var(--bg); 
+            color: #ffffff;
+            margin: 0; 
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 440px;
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+
+        h2 { font-size: 22px; font-weight: 700; text-align: center; margin-top: 0; letter-spacing: -0.5px; }
+        p.desc { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 25px; }
+
+        .scanner-wrapper {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 2px solid var(--border);
+        }
+        #video-preview { width: 100%; height: 100%; object-fit: cover; }
+        .scanner-laser {
+            position: absolute;
+            top: 50%; left: 5%;
+            width: 90%; height: 2px;
+            background-color: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+            animation: scanning 2s infinite ease-in-out;
+        }
+
+        @keyframes scanning {
+            0% { top: 10%; }
+            50% { top: 90%; }
+            100% { top: 10%; }
+        }
+
+        .input-group { margin-bottom: 18px; text-align: left; }
+        label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
+        
+        input {
+            width: 100%; padding: 14px; border-radius: 10px; background: #2a2a2a; border: 1px solid var(--border);
+            color: #fff; font-size: 16px; text-align: center; box-sizing: border-box; font-weight: bold;
+        }
+        input:focus { border-color: var(--primary); outline: none; }
+
+        button {
+            width: 100%; padding: 15px; border-radius: 12px; background: var(--primary); color: #000;
+            font-weight: 700; font-size: 15px; border: none; cursor: pointer; transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+
+        /* Card de Resultado Estilo Premium */
+        .result-card {
+            display: none;
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 16px;
+            background: #252525;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .result-title { font-size: 18px; font-weight: 700; margin: 0; }
+        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .status-badge.verde { background: rgba(0,230,118,0.15); color: var(--success); }
+        .status-badge.vermelho { background: rgba(255,23,68,0.15); color: var(--danger); }
+
+        .info-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: var(--text-muted); }
+        .info-row strong { color: #fff; }
+
+        .advice-box { margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); font-size: 13px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <h2>📱 Consulta EcoTag</h2>
+        <p class="desc">Aponte a câmera para o código de barras ou digite o ID.</p>
+
+        <div class="scanner-wrapper">
+            <video id="video-preview" autoplay playsinline></video>
+            <div class="scanner-laser"></div>
+        </div>
+
+        <div class="input-group">
+            <label>Código da Etiqueta (4 Dígitos)</label>
+            <input type="text" id="codigo-manual" maxlength="4" placeholder="EX: J106" style="letter-spacing: 3px; text-transform: uppercase;">
+        </div>
+
+        <div class="input-group">
+            <label>Meses sem uso no armário</label>
+            <input type="number" id="meses-armario" value="5" min="0">
+        </div>
+
+        <button onclick="processarValidade()">Analisar Sustentabilidade</button>
+
+        <div id="resultado-app" class="result-card">
+            <div class="result-header">
+                <h3 id="txt-nome" class="result-title">Nome da Peça</h3>
+                <span id="status-badge" class="status-badge verde">Status OK</span>
+            </div>
+            
+            <div class="info-row"><span>ID Técnico:</span> <strong id="txt-id">-</strong></div>
+            <div class="info-row"><span>Composição:</span> <strong id="txt-material">-</strong></div>
+            <div class="info-row"><span>Expectativa de Vida:</span> <strong id="txt-duracao">-</strong></div>
+            
+            <div id="txt-diagnostico" class="advice-box"></div>
+        </div>
+    </div>
+
+    <script>
+        const bancoDadosLocal = {
+            "A102": { nome: "Camiseta Básica", tecido: "Algodão Sustentável", anos: 2 },
+            "J106": { nome: "Calça Jeans Premium", tecido: "Jeans Denim", anos: 6 },
+            "L105": { nome: "Casaco de Inverno", tecido: "Lã Natural", anos: 5 },
+            "P103": { nome: "Jaqueta Corta-Vento", tecido: "Poliéster Sintético", anos: 3 },
+            "I104": { nome: "Camisa Social", tecido: "Linho Rústico", anos: 4 },
+            "S102": { nome: "Vestido de Gala", tecido: "Seda Fina", anos: 2 }
+        };
+
+        // Ativação e inicialização da Câmera Traseira
+        const video = document.getElementById('video-preview');
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => { console.error("Erro ao acessar câmera: ", err); });
+
+        // Simulação do leitor/reconhecimento óptico em tempo real
+        // Captura o último código gerado pelo painel do vendedor via localStorage para simular o "bip" da câmera
+        setInterval(() => {
+            let detectadoAtivo = localStorage.getItem('ecoTagCodigoAtivo');
+            if(detectadoAtivo){
+                document.getElementById('codigo-manual').value = detectadoAtivo;
+                localStorage.removeItem('ecoTagCodigoAtivo'); // consome o bip
+                processarValidade();
+            }
+        }, 1500);
+
+        function processarValidade() {
+            const codDigitado = document.getElementById('codigo-manual').value.toUpperCase().trim();
+            const mesesParada = parseInt(document.getElementById('meses-armario').value) || 0;
+
+            if (!bancoDadosLocal[codDigitado]) {
+                alert("Código inválido ou não detectado!");
+                return;
+            }
+
+            const pecaInfo = bancoDadosLocal[codDigitado];
+            const vidaUtilMeses = pecaInfo.anos * 12;
+            const limiteAlerta = vidaUtilMeses * 0.25;
+
+            document.getElementById('txt-nome').innerText = pecaInfo.nome;
+            document.getElementById('txt-id').innerText = codDigitado;
+            document.getElementById('txt-material').innerText = pecaInfo.tecido;
+            document.getElementById('txt-duracao').innerText = `${pecaInfo.anos} Anos`;
+
+            const badge = document.getElementById('status-badge');
+            const diagnostico = document.getElementById('txt-diagnostico');
+
+            if (mesesParada >= limiteAlerta) {
+                badge.className = "status-badge vermelho";
+                badge.innerText = "Alerta Gaveta";
+                diagnostico.innerHTML = `⚠️ <strong>Roupa ociosa detectada.</strong> Esta peça está parada há ${mesesParada} meses. O limite tolerável para este ecossistema têxtil era de ${limiteAlerta} meses. Doe ou venda para circular!`;
+                diagnostico.style.color = "#ff1744";
+            } else {
+                badge.className = "status-badge verde";
+                badge.innerText = "Uso Saudável";
+                diagnostico.innerHTML = `✓ <strong>Ciclo Sustentável em dia!</strong> Guardada há ${mesesParada} meses de um limite seguro de ${limiteAlerta} meses. Continue aproveitando seu produto.`;
+                diagnostico.style.color = "#00e676";
+            }
+
+            document.getElementById('resultado-app').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
