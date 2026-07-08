@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoTag - Terminal de Consulta</title>
+    <title>EcoTag - Terminal do Consumidor</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
             --bg: #0d0d0d;
             --surface: #1a1a1a;
             --primary: #ffffff;
-            --text-muted: #999999;
+            --text-muted: #a0a0a0;
             --border: #292929;
             --success: #00e676;
             --accent: #2979ff;
+            --warning: #ffb300;
         }
 
         body { 
@@ -31,7 +32,6 @@
         h2 { font-size: 22px; font-weight: 800; margin: 0 0 5px 0; letter-spacing: -0.5px; }
         p.desc { color: var(--text-muted); font-size: 13px; margin: 0 0 25px 0; }
 
-        /* Área Limpa de Câmera */
         .scanner-container {
             position: relative; width: 100%; aspect-ratio: 4/3;
             background: #000; border-radius: 16px; overflow: hidden;
@@ -42,7 +42,6 @@
         #reader__dashboard, #reader__status_span, #reader img { display: none !important; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
 
-        /* Laser de Mira Dinâmico */
         .scanner-laser {
             position: absolute; top: 50%; left: 5%; width: 90%; height: 2px;
             background-color: var(--success); box-shadow: 0 0 14px var(--success);
@@ -54,7 +53,6 @@
             100% { top: 15%; }
         }
 
-        /* Botão Renner para Escanear Novamente */
         .btn-next {
             display: none; width: 100%; padding: 15px; margin-bottom: 20px;
             background: var(--accent); color: white; border: none; font-weight: 700;
@@ -62,7 +60,6 @@
         }
         .btn-next:hover { opacity: 0.9; }
 
-        /* Card de Informações da Roupa */
         .result-card {
             display: none; margin-top: 15px; padding: 22px; border-radius: 16px;
             background: #222222; border: 1px solid var(--border); text-align: left;
@@ -73,7 +70,16 @@
         .result-title { font-size: 18px; font-weight: 800; margin: 0 0 2px 0; text-transform: uppercase; }
         .result-color { font-size: 13px; color: #a0a0a0; margin-bottom: 15px; font-weight: 500; }
         
-        .price-badge { font-size: 28px; font-weight: 900; color: #ffffff; margin-bottom: 18px; letter-spacing: -0.5px; }
+        .price-badge { font-size: 32px; font-weight: 900; color: #ffffff; margin-bottom: 20px; letter-spacing: -0.5px; }
+
+        .metrics-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
+        }
+        .metric-box {
+            background: #2d2d2d; border: 1px solid var(--border); padding: 12px; border-radius: 10px; text-align: center;
+        }
+        .metric-val { font-size: 18px; font-weight: 800; color: var(--warning); display: block; margin-top: 4px; }
+        .metric-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
 
         .info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
         .info-row strong { color: #fff; }
@@ -88,7 +94,7 @@
 
     <div class="app-container">
         <h2>📱 Consulta EcoTag</h2>
-        <p class="desc">Aponte para o código de barras da etiqueta</p>
+        <p class="desc">Aponte para o código de barras da peça</p>
 
         <div class="scanner-container">
             <div id="reader"></div>
@@ -99,43 +105,43 @@
 
         <div id="resultado-app" class="result-card">
             <h3 id="txt-nome" class="result-title">Nome do Produto</h3>
-            <div id="txt-cor" class="result-color">Cor: Carregando...</div>
+            <div id="txt-cor" class="result-color">COR: -</div>
             
             <div class="price-badge" id="txt-preco">R$ 0,00</div>
 
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <span class="metric-label">Limite Lavagens</span>
+                    <strong class="metric-val" id="txt-lavagens">0</strong>
+                </div>
+                <div class="metric-box">
+                    <span class="metric-label">Limite Secagem</span>
+                    <strong class="metric-val" id="txt-secagem">0</strong>
+                </div>
+            </div>
+
             <div class="info-row"><span>SKU Técnico:</span> <strong id="txt-id">-</strong></div>
             <div class="info-row"><span>Composição:</span> <strong id="txt-material">-</strong></div>
-            <div class="info-row"><span>Ciclo de Vida:</span> <strong id="txt-duracao">-</strong></div>
+            <div class="info-row"><span>Ciclo de Vida Total:</span> <strong id="txt-duracao">-</strong></div>
             <div id="txt-diagnostico" class="advice-box"></div>
         </div>
     </div>
 
     <script>
-        // Banco de Dados Sincronizado com o Painel de Fabricação
+        // Catálogo com dados técnicos reais de desgaste por lavagem e secagem mecânica
         const bancoDadosLocal = {
-            "A102": { nome: "Camiseta Básica", cor: "Preto Sólido", tecido: "Algodão Sustentável 100%", anos: 2, preco: "R$ 89,90" },
-            "A103": { nome: "Camiseta Básica", cor: "Branco Off-White", tecido: "Algodão Sustentável 100%", anos: 2, preco: "R$ 89,90" },
-            "A104": { nome: "Camiseta Básica", cor: "Azul Marinho", tecido: "Algodão Sustentável 100%", anos: 2, preco: "R$ 89,90" },
-            
-            "J106": { nome: "Calça Jeans Slim", cor: "Azul Denim Tradicional", tecido: "Jeans Algodão & Elastano", anos: 6, preco: "R$ 199,90" },
-            "J107": { nome: "Calça Jeans Slim", cor: "Preto Estonado", tecido: "Jeans Heavy Denim", anos: 6, preco: "R$ 219,90" },
-            
-            "L105": { nome: "Casaco de Lã Winter", cor: "Marrom Camel", tecido: "Lã Fria Premium", anos: 5, preco: "R$ 299,90" },
-            "L106": { nome: "Casaco de Lã Winter", cor: "Cinza Mescla", tecido: "Lã Fria Premium", anos: 5, preco: "R$ 299,90" },
-            
-            "P103": { nome: "Jaqueta Corta-Vento", cor: "Verde Militar", tecido: "Poliéster Impermeável", anos: 3, preco: "R$ 159,90" },
-            "P104": { nome: "Jaqueta Corta-Vento", cor: "Preto Fosco", tecido: "Poliéster Impermeável", anos: 3, preco: "R$ 159,90" },
-            
-            "I104": { nome: "Camisa Casual Linho", cor: "Areia Natural", tecido: "Linho Puro Rústico", anos: 4, preco: "R$ 149,90" },
-            "I105": { nome: "Camisa Casual Linho", cor: "Azul Celeste", tecido: "Linho Puro Rústico", anos: 4, preco: "R$ 149,90" },
-            
-            "S102": { nome: "Vestido Midi Fluido", cor: "Vermelho Rubi", tecido: "Seda Acetinada Genuína", anos: 2, preco: "R$ 349,90" },
-            "S103": { nome: "Vestido Midi Fluido", cor: "Estampa Floral Dark", tecido: "Seda Acetinada Genuína", anos: 2, preco: "R$ 369,90" }
+            "A102": { nome: "Camiseta Básica", cor: "Preto Sólido", tecido: "Algodão Sustentável 100%", anos: 2, lavagens: 50, secagem: 30, precoPadrao: "R$ 89,90" },
+            "A103": { nome: "Camiseta Básica", cor: "Branco Off-White", tecido: "Algodão Sustentável 100%", anos: 2, lavagens: 50, secagem: 30, precoPadrao: "R$ 89,90" },
+            "J106": { nome: "Calça Jeans Slim", cor: "Azul Denim Tradicional", tecido: "Jeans Denim Premium", anos: 6, lavagens: 120, secagem: 60, precoPadrao: "R$ 199,90" },
+            "J107": { nome: "Calça Jeans Slim", cor: "Preto Estonado", tecido: "Jeans Heavy Denim", anos: 6, lavagens: 120, secagem: 60, precoPadrao: "R$ 219,90" },
+            "L105": { nome: "Casaco de Lã Winter", cor: "Marrom Camel", tecido: "Lã Fria Natural", anos: 5, lavagens: 15, secagem: 0, precoPadrao: "R$ 299,90" }, // Lã não deve ir à secadora
+            "P103": { nome: "Jaqueta Corta-Vento", cor: "Verde Militar", tecido: "Poliéster Impermeável", anos: 3, lavagens: 80, secagem: 40, precoPadrao: "R$ 159,90" },
+            "I104": { nome: "Camisa Casual Linho", cor: "Areia Natural", tecido: "Linho Puro Rústico", anos: 4, lavagens: 40, secagem: 20, precoPadrao: "R$ 149,90" },
+            "S102": { nome: "Vestido Midi Fluido", cor: "Vermelho Rubi", tecido: "Seda Acetinada Genuína", anos: 2, lavagens: 20, secagem: 0, precoPadrao: "R$ 349,90" } // Seda de alta fragilidade mecânica
         };
 
         let leitorAtivo = true;
 
-        // Som de Confirmação BIP Comercial
         function darBip() {
             try {
                 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -148,7 +154,7 @@
                 gainNode.connect(audioCtx.destination);
                 oscillator.start();
                 setTimeout(() => oscillator.stop(), 105);
-            } catch(e) { console.log("Áudio pendente de clique."); }
+            } catch(e) { console.log("Áudio aguardando clique inicial."); }
         }
 
         function iniciarCamera() {
@@ -173,16 +179,13 @@
                         },
                         (decodedText) => {
                             let cod = decodedText.toUpperCase().trim();
-                            
-                            // Apenas processa se o leitor estiver destravado e encontrar no catálogo
                             if (leitorAtivo && bancoDadosLocal[cod]) {
-                                leitorAtivo = false; // Trava o scanner para reter a informação na tela
-                                
+                                leitorAtivo = false; 
                                 darBip();
                                 exibirDados(cod);
                             }
                         },
-                        (errorMessage) => { /* Captura contínua */ }
+                        (errorMessage) => { }
                     ).catch(err => { console.error(err); });
                 }
             }).catch(err => { alert("Permita o acesso à câmera."); });
@@ -190,28 +193,35 @@
 
         function exibirDados(cod) {
             const pecaInfo = bancoDadosLocal[cod];
+            
+            // BUSCA O VALOR CUSTOMIZADO QUE O VENDEDOR COLOCOU (OU EXIBE O PADRÃO CASO NÃO EXISTA)
+            const precoCustomizado = localStorage.getItem('preco_dinamico_' + cod);
+            const precoFinal = precoCustomizado ? precoCustomizado : pecaInfo.precoPadrao;
+
             document.getElementById('txt-nome').innerText = pecaInfo.nome;
             document.getElementById('txt-cor').innerText = "COR: " + pecaInfo.cor;
-            document.getElementById('txt-preco').innerText = pecaInfo.preco; 
+            document.getElementById('txt-preco').innerText = precoFinal; 
+            document.getElementById('txt-lavagens').innerText = pecaInfo.lavagens + "x";
+            
+            // Tratamento especial para itens que não podem ir à secadora rotativa
+            document.getElementById('txt-secagem').innerText = pecaInfo.secagem === 0 ? "Proibido" : pecaInfo.secagem + "x";
+            
             document.getElementById('txt-id').innerText = cod;
             document.getElementById('txt-material').innerText = pecaInfo.tecido;
             document.getElementById('txt-duracao').innerText = `${pecaInfo.anos} Anos`;
 
-            document.getElementById('txt-diagnostico').innerHTML = `✓ <strong>Leitura realizada com sucesso!</strong> Produto validado no inventário EcoTag.`;
+            document.getElementById('txt-diagnostico').innerHTML = `✓ <strong>EcoTag Validada:</strong> Este material suporta até ${pecaInfo.lavagens} ciclos de higienização mantendo a estrutura original das fibras moleculares.`;
             
-            // Exibe o painel de resultados e o botão de destravar
             document.getElementById('resultado-app').style.display = 'block';
             document.getElementById('btn-reset').style.display = 'block';
-            document.getElementById('laser').style.backgroundColor = "#ff1744"; // Laser fica vermelho sinalizando pausa
+            document.getElementById('laser').style.backgroundColor = "#ff1744"; 
         }
 
         function liberarProximoEscaneamento() {
-            leitorAtivo = true; // Libera o scanner para aceitar novos bips
-            
-            // Reseta e limpa a interface visual para aguardar a próxima leitura
+            leitorAtivo = true; 
             document.getElementById('btn-reset').style.display = 'none';
             document.getElementById('resultado-app').style.display = 'none';
-            document.getElementById('laser').style.backgroundColor = "var(--success)"; // Laser volta a ficar verde
+            document.getElementById('laser').style.backgroundColor = "var(--success)"; 
         }
 
         window.addEventListener('DOMContentLoaded', iniciarCamera);
