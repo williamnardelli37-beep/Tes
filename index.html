@@ -7,69 +7,76 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         :root {
-            --primary: #111111;
-            --primary-hover: #333333;
-            --bg: #f4f6f8;
+            --primary: #0a0a0a;
+            --primary-hover: #262626;
+            --bg: #f8f9fa;
             --card-bg: #ffffff;
             --text: #1a1a1a;
-            --border: #dddddd;
-            --accent: #0066cc;
+            --border: #e5e5e5;
         }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
-            background-color: var(--bg); margin: 0; padding: 40px 20px; color: var(--text); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; padding: 40px 20px; color: var(--text); 
             display: flex; justify-content: center;
         }
 
         .container { 
-            width: 100%; max-width: 520px; background: var(--card-bg); 
-            padding: 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border: 1px solid var(--border); box-sizing: border-box;
+            width: 100%; max-width: 500px; background: var(--card-bg); 
+            padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
         }
 
-        h2 { font-size: 24px; font-weight: 800; margin: 0 0 5px 0; letter-spacing: -0.5px; text-align: center; }
-        p.subtitle { color: #666; font-size: 14px; margin: 0 0 30px 0; text-align: center; }
-        
+        h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        p.subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
         .form-group { text-align: left; margin-bottom: 20px; }
-        label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; color: #555; }
+        label { display: block; font-size: 13px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
         
-        select { 
-            width: 100%; padding: 14px; border-radius: 10px; border: 1px solid var(--border); 
-            font-size: 15px; box-sizing: border-box; background: #fafafa; transition: all 0.2s;
+        select, input { 
+            width: 100%; padding: 14px; border-radius: 8px; border: 1px solid var(--border); 
+            font-size: 15px; box-sizing: border-box; background: #fafafa;
         }
-        select:focus { border-color: var(--accent); background: #fff; outline: none; }
 
         button { 
-            width: 100%; padding: 16px; border-radius: 10px; background-color: var(--primary); 
-            color: white; border: none; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 10px;
-            transition: background 0.2s;
+            width: 100%; padding: 15px; border-radius: 8px; background-color: var(--primary); 
+            color: white; border: none; font-weight: 600; font-size: 15px; cursor: pointer; margin-top: 10px;
         }
         button:hover { background-color: var(--primary-hover); }
         
-        /* Área de Impressão da Etiqueta */
+        /* Área de Impressão da Etiqueta Físicas (Tamanho Gôndola/Térmica) */
         .print-area-wrapper { display: none; margin-top: 35px; text-align: center; }
         
         .print-area {
-            background: white; border: 1px dashed #000; padding: 20px;
-            width: 62mm; margin: 0 auto 20px auto; box-sizing: border-box; text-align: center; color: #000;
+            background: white;
+            border: 1px dashed #000;
+            padding: 15px;
+            width: 62mm; /* Largura ideal de etiqueta têxtil */
+            margin: 0 auto 15px auto;
+            box-sizing: border-box;
+            text-align: center;
+            color: #000;
         }
-        .brand-label { font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
-        .desc-tag { font-size: 12px; font-weight: 700; margin: 2px 0; text-transform: uppercase; }
-        .color-tag { font-size: 11px; color: #555; margin-bottom: 5px; font-weight: bold; }
+        .brand-label { font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; }
+        .desc-tag { font-size: 11px; font-weight: 600; margin: 2px 0; text-transform: uppercase; }
         
-        .barcode-container { width: 100%; margin: 8px 0; background: #fff; }
-        .barcode-container svg { width: 100%; max-height: 65px; }
+        /* Container do SVG do Código de Barras Real */
+        .barcode-container { width: 100%; margin: 5px 0; }
+        .barcode-container svg { width: 100%; max-height: 45px; }
 
-        .price-tag { font-size: 22px; font-weight: 900; margin-top: 5px; letter-spacing: -0.5px; }
+        .price-tag { font-size: 20px; font-weight: 800; margin-top: 5px; }
 
-        .btn-print { background-color: #555; }
-        .btn-print:hover { background-color: #333; }
+        .btn-print { background-color: #444; }
 
+        /* Regras rígidas de Impressão */
         @media print {
             body * { visibility: hidden; }
             .print-area, .print-area * { visibility: visible; }
-            .print-area { position: absolute; left: 0; top: 0; width: 62mm; border: none; padding: 0; margin: 0; }
+            .print-area { 
+                position: absolute; left: 0; top: 0; 
+                width: 62mm; border: none; padding: 0; margin: 0;
+            }
+            /* Garante que navegadores renderizem elementos gráficos e fontes nitidamente */
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
@@ -78,29 +85,31 @@
 
     <div class="container">
         <h2>🏭 EcoTag Enterprise</h2>
-        <p class="subtitle">Configuração e Emissão de Etiquetas de Produtos</p>
+        <p class="subtitle">Geração de Código de Barras e Etiquetas Comerciais</p>
         
         <div class="form-group">
-            <label for="tipo-roupa">Selecione o Produto e Cor</label>
+            <label for="tipo-roupa">Modelo do Produto</label>
             <select id="tipo-roupa">
-                <option value="A102" data-nome="Camiseta Básica" data-cor="Preto Sólido" data-preco="R$ 89,90">Camiseta Básica - Preto Sólido (A102)</option>
-                <option value="A103" data-nome="Camiseta Básica" data-cor="Branco Off-White" data-preco="R$ 89,90">Camiseta Básica - Branco Off-White (A103)</option>
-                <option value="J106" data-nome="Calça Jeans Slim" data-cor="Azul Denim Tradicional" data-preco="R$ 199,90">Calça Jeans Slim - Azul Denim (J106)</option>
-                <option value="J107" data-nome="Calça Jeans Slim" data-cor="Preto Estonado" data-preco="R$ 219,90">Calça Jeans Slim - Preto Estonado (J107)</option>
-                <option value="L105" data-nome="Casaco de Lã Winter" data-cor="Marrom Camel" data-preco="R$ 299,90">Casaco de Lã - Marrom Camel (L105)</option>
-                <option value="P103" data-nome="Jaqueta Corta-Vento" data-cor="Verde Militar" data-preco="R$ 159,90">Jaqueta Corta-Vento - Verde Militar (P103)</option>
-                <option value="I104" data-nome="Camisa Casual Linho" data-cor="Areia Natural" data-preco="R$ 149,90">Camisa Linho - Areia Natural (I104)</option>
-                <option value="S102" data-nome="Vestido Midi Fluido" data-cor="Vermelho Rubi" data-preco="R$ 349,90">Vestido Midi - Vermelho Rubi (S102)</option>
+                <option value="A102" data-nome="Camiseta de Algodão">Camiseta de Algodão (A102)</option>
+                <option value="J106" data-nome="Calça Jeans Premium">Calça Jeans Premium (J106)</option>
+                <option value="L105" data-nome="Casaco de Lã">Casaco de Lã de Inverno (L105)</option>
+                <option value="P103" data-nome="Jaqueta de Poliéster">Jaqueta de Poliéster (P103)</option>
+                <option value="I104" data-nome="Camisa de Linho">Camisa Fina de Linho (I104)</option>
+                <option value="S102" data-nome="Vestido de Seda">Vestido de Seda Leve (S102)</option>
             </select>
         </div>
 
-        <button onclick="gerarEtiqueta()">Gerar Código de Barras</button>
+        <div class="form-group">
+            <label for="preco-roupa">Preço de Venda (R$)</label>
+            <input type="number" id="preco-roupa" value="129.90" step="0.01">
+        </div>
+
+        <button onclick="gerarEtiqueta()">Gerar Código Dinâmico</button>
 
         <div id="etiqueta-wrapper" class="print-area-wrapper">
             <div class="print-area">
-                <div class="brand-label">EcoTag Renner-Style</div>
+                <div class="brand-label">Eco Tag 💳</div>
                 <div class="desc-tag" id="lbl-nome">Produto</div>
-                <div class="color-tag" id="lbl-cor">Cor: Unica</div>
                 
                 <div class="barcode-container">
                     <svg id="barcode"></svg>
@@ -117,22 +126,23 @@
             const combo = document.getElementById('tipo-roupa');
             const codigo = combo.value;
             const nomePeca = combo.options[combo.selectedIndex].getAttribute('data-nome');
-            const corPeca = combo.options[combo.selectedIndex].getAttribute('data-cor');
-            const precoFixo = combo.options[combo.selectedIndex].getAttribute('data-preco');
+            const preco = parseFloat(document.getElementById('preco-roupa').value).toFixed(2).replace('.', ',');
+            
+            // Salva na sessão local para ponte com o cliente
+            localStorage.setItem('ecoTagCodigoAtivo', codigo);
 
+            // Atualiza Textos
             document.getElementById('lbl-nome').innerText = nomePeca;
-            document.getElementById('lbl-cor').innerText = "COR: " + corPeca;
-            document.getElementById('lbl-preco').innerText = precoFixo;
+            document.getElementById('lbl-preco').innerText = 'R$ ' + preco;
 
-            // Código de barras espesso otimizado para focagem rápida
+            // Renderiza o Código de Barras Real utilizando CODE128 comercial
             JsBarcode("#barcode", codigo, {
                 format: "CODE128",
-                width: 3,         
-                height: 55,        
-                displayValue: true, 
-                fontSize: 15,
-                margin: 12,        
-                background: "#ffffff",
+                width: 2,
+                height: 40,
+                displayValue: true, // Mostra o texto legível (A102, J106, etc) abaixo das barras
+                fontSize: 14,
+                margin: 0,
                 lineColor: "#000000"
             });
 
