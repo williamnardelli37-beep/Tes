@@ -128,16 +128,16 @@
     </div>
 
     <script>
-        // Catálogo com dados técnicos reais de desgaste por lavagem e secagem mecânica
+        // Catálogo oficial com dados técnicos e valores fixos de mercado
         const bancoDadosLocal = {
-            "A102": { nome: "Camiseta Básica", cor: "Preto Sólido", tecido: "Algodão Sustentável 100%", anos: 2, lavagens: 50, secagem: 30, precoPadrao: "R$ 89,90" },
-            "A103": { nome: "Camiseta Básica", cor: "Branco Off-White", tecido: "Algodão Sustentável 100%", anos: 2, lavagens: 50, secagem: 30, precoPadrao: "R$ 89,90" },
-            "J106": { nome: "Calça Jeans Slim", cor: "Azul Denim Tradicional", tecido: "Jeans Denim Premium", anos: 6, lavagens: 120, secagem: 60, precoPadrao: "R$ 199,90" },
-            "J107": { nome: "Calça Jeans Slim", cor: "Preto Estonado", tecido: "Jeans Heavy Denim", anos: 6, lavagens: 120, secagem: 60, precoPadrao: "R$ 219,90" },
-            "L105": { nome: "Casaco de Lã Winter", cor: "Marrom Camel", tecido: "Lã Fria Natural", anos: 5, lavagens: 15, secagem: 0, precoPadrao: "R$ 299,90" }, // Lã não deve ir à secadora
-            "P103": { nome: "Jaqueta Corta-Vento", cor: "Verde Militar", tecido: "Poliéster Impermeável", anos: 3, lavagens: 80, secagem: 40, precoPadrao: "R$ 159,90" },
-            "I104": { nome: "Camisa Casual Linho", cor: "Areia Natural", tecido: "Linho Puro Rústico", anos: 4, lavagens: 40, secagem: 20, precoPadrao: "R$ 149,90" },
-            "S102": { nome: "Vestido Midi Fluido", cor: "Vermelho Rubi", tecido: "Seda Acetinada Genuína", anos: 2, lavagens: 20, secagem: 0, precoPadrao: "R$ 349,90" } // Seda de alta fragilidade mecânica
+            "A102": { nome: "Camiseta Básica", cor: "Preto Sólido", tecido: "Algodão Sustentável 100%", anos: 2, lavagens: 50, secagem: 30, preco: "R$ 89,90" },
+            "A103": { nome: "Camiseta Básica", cor: "Branco Off-White", tecido: "Algodão Sustentável 100%", anos: 2, lavagens: 50, secagem: 30, preco: "R$ 89,90" },
+            "J106": { nome: "Calça Jeans Slim", cor: "Azul Denim Tradicional", tecido: "Jeans Denim Premium", anos: 6, lavagens: 120, secagem: 60, preco: "R$ 199,90" },
+            "J107": { nome: "Calça Jeans Slim", cor: "Preto Estonado", tecido: "Jeans Heavy Denim", anos: 6, lavagens: 120, secagem: 60, preco: "R$ 219,90" },
+            "L105": { nome: "Casaco de Lã Winter", cor: "Marrom Camel", tecido: "Lã Fria Natural", anos: 5, lavagens: 15, secagem: 0, preco: "R$ 299,90" }, // Lã não deve ir à secadora
+            "P103": { nome: "Jaqueta Corta-Vento", cor: "Verde Militar", tecido: "Poliéster Impermeável", anos: 3, lavagens: 80, secagem: 40, preco: "R$ 159,90" },
+            "I104": { nome: "Camisa Casual Linho", cor: "Areia Natural", tecido: "Linho Puro Rústico", anos: 4, lavagens: 40, secagem: 20, preco: "R$ 149,90" },
+            "S102": { nome: "Vestido Midi Fluido", cor: "Vermelho Rubi", tecido: "Seda Acetinada Genuína", anos: 2, lavagens: 20, secagem: 0, preco: "R$ 349,90" } // Seda proibida em secadoras
         };
 
         let leitorAtivo = true;
@@ -193,14 +193,10 @@
 
         function exibirDados(cod) {
             const pecaInfo = bancoDadosLocal[cod];
-            
-            // BUSCA O VALOR CUSTOMIZADO QUE O VENDEDOR COLOCOU (OU EXIBE O PADRÃO CASO NÃO EXISTA)
-            const precoCustomizado = localStorage.getItem('preco_dinamico_' + cod);
-            const precoFinal = precoCustomizado ? precoCustomizado : pecaInfo.precoPadrao;
 
             document.getElementById('txt-nome').innerText = pecaInfo.nome;
             document.getElementById('txt-cor').innerText = "COR: " + pecaInfo.cor;
-            document.getElementById('txt-preco').innerText = precoFinal; 
+            document.getElementById('txt-preco').innerText = pecaInfo.preco; 
             document.getElementById('txt-lavagens').innerText = pecaInfo.lavagens + "x";
             
             // Tratamento especial para itens que não podem ir à secadora rotativa
