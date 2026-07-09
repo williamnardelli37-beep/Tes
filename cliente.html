@@ -3,203 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoTag - Área do Cliente</title>
+    <title>EcoTag - Terminal Inteligente do Consumidor</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
-            --bg: #121212;
-            --surface: #1e1e1e;
+            --bg: #0d0d0d;
+            --surface: #1a1a1a;
+            --surface-light: #262626;
             --primary: #ffffff;
             --text-muted: #a0a0a0;
-            --border: #333333;
+            --border: #292929;
             --success: #00e676;
+            --accent: #2979ff;
+            --warning: #ffb300;
             --danger: #ff1744;
         }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            background-color: var(--bg); 
-            color: #ffffff;
-            margin: 0; 
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: var(--bg); color: #ffffff; margin: 0; padding: 20px;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
         }
 
         .app-container {
-            width: 100%;
-            max-width: 440px;
-            background: var(--surface);
-            padding: 30px;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            box-sizing: border-box;
+            width: 100%; max-width: 440px; background: var(--surface);
+            padding: 25px; border-radius: 24px; border: 1px solid var(--border);
+            box-sizing: border-box; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.4);
         }
 
-        h2 { font-size: 22px; font-weight: 700; text-align: center; margin-top: 0; letter-spacing: -0.5px; }
-        p.desc { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 25px; }
+        h2 { font-size: 22px; font-weight: 800; margin: 0 0 5px 0; letter-spacing: -0.5px; }
+        p.desc { color: var(--text-muted); font-size: 13px; margin: 0 0 20px 0; }
 
-        .scanner-wrapper {
-            position: relative;
-            width: 100%;
-            height: 200px;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            border: 2px solid var(--border);
+        /* Abas de Navegação (Scanner vs Foto) */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #000; padding: 5px; border-radius: 12px; }
+        .tab-btn { flex: 1; padding: 10px; background: transparent; border: none; color: var(--text-muted); font-weight: 600; font-size: 13px; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+        .tab-btn.active { background: var(--surface-light); color: #fff; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Área do Scanner de Código */
+        .scanner-container {
+            position: relative; width: 100%; aspect-ratio: 4/3;
+            background: #000; border-radius: 16px; overflow: hidden;
+            border: 1px solid var(--border); margin-bottom: 15px;
         }
-        #video-preview { width: 100%; height: 100%; object-fit: cover; }
+        #reader { width: 100% !important; height: 100% !important; border: none !important; }
+        #reader__dashboard, #reader__status_span, #reader img { display: none !important; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+
         .scanner-laser {
-            position: absolute;
-            top: 50%; left: 5%;
-            width: 90%; height: 2px;
-            background-color: var(--danger);
-            box-shadow: 0 0 8px var(--danger);
-            animation: scanning 2s infinite ease-in-out;
+            position: absolute; top: 50%; left: 5%; width: 90%; height: 2px;
+            background-color: var(--success); box-shadow: 0 0 14px var(--success);
+            animation: scanAnimation 2s infinite ease-in-out; pointer-events: none; z-index: 10;
+        }
+        @keyframes scanAnimation {
+            0% { top: 15%; }
+            50% { top: 85%; }
+            100% { top: 15%; }
         }
 
-        @keyframes scanning {
-            0% { top: 10%; }
-            50% { top: 90%; }
-            100% { top: 10%; }
+        /* Área de Busca por Foto (Inteligente) */
+        .photo-upload-box {
+            border: 2px dashed var(--border); padding: 30px 15px; border-radius: 16px;
+            background: #000; cursor: pointer; transition: border-color 0.2s;
         }
-
-        .input-group { margin-bottom: 18px; text-align: left; }
-        label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
+        .photo-upload-box:hover { border-color: var(--accent); }
+        .photo-upload-box label { cursor: pointer; display: block; color: var(--text-muted); font-size: 13px; }
+        .photo-upload-box input { display: none; }
         
-        input {
-            width: 100%; padding: 14px; border-radius: 10px; background: #2a2a2a; border: 1px solid var(--border);
-            color: #fff; font-size: 16px; text-align: center; box-sizing: border-box; font-weight: bold;
+        .preview-img-container { display: none; margin-top: 15px; position: relative; }
+        .preview-img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); }
+        
+        /* Botões Globais */
+        .btn-action {
+            width: 100%; padding: 14px; background: var(--accent); color: white; border: none; 
+            font-weight: 700; border-radius: 12px; font-size: 14px; cursor: pointer; transition: opacity 0.2s; margin-top: 10px;
         }
-        input:focus { border-color: var(--primary); outline: none; }
+        .btn-action:hover { opacity: 0.9; }
+        .btn-next { display: none; background: var(--surface-light); border: 1px solid var(--border); color: #fff; margin-bottom: 15px; }
 
-        button {
-            width: 100%; padding: 15px; border-radius: 12px; background: var(--primary); color: #000;
-            font-weight: 700; font-size: 15px; border: none; cursor: pointer; transition: opacity 0.2s;
-        }
-        button:hover { opacity: 0.9; }
-
-        /* Card de Resultado Estilo Premium */
+        /* Card de Resultados Expandido */
         .result-card {
-            display: none;
-            margin-top: 25px;
-            padding: 20px;
-            border-radius: 16px;
-            background: #252525;
-            border: 1px solid var(--border);
-            text-align: left;
+            display: none; margin-top: 15px; padding: 20px; border-radius: 16px;
+            background: #1e1e1e; border: 1px solid var(--border); text-align: left;
+            animation: slideUp 0.3s ease-out;
         }
-        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .result-title { font-size: 18px; font-weight: 700; margin: 0; }
-        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .status-badge.verde { background: rgba(0,230,118,0.15); color: var(--success); }
-        .status-badge.vermelho { background: rgba(255,23,68,0.15); color: var(--danger); }
+        @keyframes slideUp { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .info-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: var(--text-muted); }
+        .result-title { font-size: 18px; font-weight: 800; margin: 0; text-transform: uppercase; }
+        .result-color { font-size: 12px; color: var(--text-muted); margin: 3px 0 15px 0; font-weight: 500; }
+        .price-badge { font-size: 30px; font-weight: 900; color: #ffffff; margin-bottom: 15px; letter-spacing: -0.5px; }
+
+        /* Métricas Têxteis */
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .metric-box { background: #262626; border: 1px solid var(--border); padding: 10px; border-radius: 8px; text-align: center; }
+        .metric-val { font-size: 16px; font-weight: 800; color: var(--warning); display: block; margin-top: 2px; }
+        .metric-label { font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+
+        .info-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: var(--text-muted); }
         .info-row strong { color: #fff; }
 
-        .advice-box { margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); font-size: 13px; line-height: 1.5; }
+        /* Seção de Reserva Inteligente */
+        .reservation-section {
+            margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);
+        }
+        .size-selector { display: flex; gap: 8px; margin: 10px 0; justify-content: center; }
+        .size-btn {
+            background: #262626; border: 1px solid var(--border); color: white; width: 40px; height: 40px;
+            border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; transition: all 0.2s;
+        }
+        .size-btn:hover { border-color: var(--accent); }
+        .size-btn.active { background: var(--accent); border-color: var(--accent); }
+
+        .btn-reserve { background: var(--success); color: #000; font-weight: 800; }
+
+        /* Painel de Confirmação de Reserva */
+        .receipt-box {
+            display: none; background: #000; padding: 15px; border-radius: 12px; border: 1px dashed var(--success); margin-top: 15px;
+        }
+        .receipt-title { color: var(--success); font-size: 13px; font-weight: 800; text-transform: uppercase; margin: 0 0 5px 0; text-align: center; }
+        .receipt-code { font-family: monospace; font-size: 18px; color: #fff; text-align: center; font-weight: 700; display: block; letter-spacing: 2px; margin: 5px 0; }
+        
+        .ai-status { font-size: 12px; color: var(--accent); font-weight: 600; margin-top: 5px; text-align: center; display: none; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <h2>📱 Consulta EcoTag</h2>
-        <p class="desc">Aponte a câmera para o código de barras ou digite o ID.</p>
+        <h2>📱 Omnichannel EcoTag</h2>
+        <p class="desc">Consulte dados reais e reserve seu produto</p>
 
-        <div class="scanner-wrapper">
-            <video id="video-preview" autoplay playsinline></video>
-            <div class="scanner-laser"></div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('scan')">🏷️ Escanear Etiqueta</button>
+            <button class="tab-btn" onclick="switchTab('photo')">📸 Buscar por Foto</button>
         </div>
 
-        <div class="input-group">
-            <label>Código da Etiqueta (4 Dígitos)</label>
-            <input type="text" id="codigo-manual" maxlength="4" placeholder="EX: J106" style="letter-spacing: 3px; text-transform: uppercase;">
+        <div id="tab-scan" class="tab-content active">
+            <div class="scanner-container">
+                <div id="reader"></div>
+                <div class="scanner-laser" id="laser"></div>
+            </div>
         </div>
 
-        <div class="input-group">
-            <label>Meses sem uso no armário</label>
-            <input type="number" id="meses-armario" value="5" min="0">
+        <div id="tab-photo" class="tab-content">
+            <div class="photo-upload-box" onclick="document.getElementById('file-input').click()">
+                <label>
+                    📷 Clique para Tirar Foto ou Enviar Imagem<br>
+                    <span style="font-size: 11px; color:#666;">A IA identificará o produto automaticamente</span>
+                </label>
+                <input type="file" id="file-input" accept="image/*" onchange="processarFoto(event)">
+            </div>
+            <div class="preview-img-container" id="preview-container">
+                <img id="img-captured" class="preview-img" src="" alt="Preview">
+                <div id="ai-loading" class="ai-status">🤖 Analisando padrões do tecido e cor via Visão Computacional...</div>
+            </div>
         </div>
 
-        <button onclick="processarValidade()">Analisar Sustentabilidade</button>
+        <button id="btn-reset" class="btn-action btn-next" onclick="liberarProximoEscaneamento()">🔄 Limpar e Buscar Próximo</button>
 
         <div id="resultado-app" class="result-card">
-            <div class="result-header">
-                <h3 id="txt-nome" class="result-title">Nome da Peça</h3>
-                <span id="status-badge" class="status-badge verde">Status OK</span>
+            <h3 id="txt-nome" class="result-title">Nome do Produto</h3>
+            <div id="txt-cor" class="result-color">COR: -</div>
+            
+            <div class="price-badge" id="txt-preco">R$ 0,00</div>
+
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <span class="metric-label">Limite Lavagens</span>
+                    <strong class="metric-val" id="txt-lavagens">0</strong>
+                </div>
+                <div class="metric-box">
+                    <span class="metric-label">Limite Secagem</span>
+                    <strong class="metric-val" id="txt-secagem">0</strong>
+                </div>
             </div>
-            
-            <div class="info-row"><span>ID Técnico:</span> <strong id="txt-id">-</strong></div>
-            <div class="info-row"><span>Composição:</span> <strong id="txt-material">-</strong></div>
+
+            <div class="info-row"><span>SKU Identificado:</span> <strong id="txt-id">-</strong></div>
+            <div class="info-row"><span>Composição Fibras:</span> <strong id="txt-material">-</strong></div>
             <div class="info-row"><span>Expectativa de Vida:</span> <strong id="txt-duracao">-</strong></div>
-            
-            <div id="txt-diagnostico" class="advice-box"></div>
+
+            <div class="reservation-section">
+                <div class="info-row"><span style="color:#fff; font-weight:700;">🛍️ Reservar para Retirada:</span></div>
+                <div class="size-selector">
+                    <button class="size-btn" onclick="selectSize(this, 'P')">P</button>
+                    <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
+                    <button class="size-btn" onclick="selectSize(this, 'G')">G</button>
+                    <button class="size-btn" onclick="selectSize(this, 'GG')">GG</button>
+                </div>
+                <button class="btn-action btn-reserve" onclick="efetuarReserva()">Confirmar Reserva Garantida</button>
+                
+                <div class="receipt-box" id="reserva-recibo">
+                    <p class="receipt-title">✓ PRODUTO RESERVADO COM SUCESSO</p>
+                    <span style="font-size:11px; color: var(--text-muted); display:block; text-align:center;">Apresente no caixa em até 24h:</span>
+                    <span class="receipt-code" id="reserva-codigo">ECO-0000</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // Catálogo Técnico Oficial
         const bancoDadosLocal = {
-            "A102": { nome: "Camiseta Básica", tecido: "Algodão Sustentável", anos: 2 },
-            "J106": { nome: "Calça Jeans Premium", tecido: "Jeans Denim", anos: 6 },
-            "L105": { nome: "Casaco de Inverno", tecido: "Lã Natural", anos: 5 },
-            "P103": { nome: "Jaqueta Corta-Vento", tecido: "Poliéster Sintético", anos: 3 },
-            "I104": { nome: "Camisa Social", tecido: "Linho Rústico", anos: 4 },
-            "S102": { nome: "Vestido de Gala", tecido: "Seda Fina", anos: 2 }
+            "A102": { nome: "Camiseta Básica", cor: "Preto Sólido", tecido: "Algodão Sustentável 100%", anos: 2, lavagens: 50, secagem: 30, preco: "R$ 89,90" },
+            "A103": { nome: "Camiseta Básica", cor: "Branco Off-White", tecido: "Algodão Sustentável 100%", anos: 2, lavagens: 50, secagem: 30, preco: "R$ 89,90" },
+            "J106": { nome: "Calça Jeans Slim", cor: "Azul Denim Tradicional", tecido: "Jeans Denim Premium", anos: 6, lavagens: 120, secagem: 60, preco: "R$ 199,90" },
+            "J107": { nome: "Calça Jeans Slim", cor: "Preto Estonado", tecido: "Jeans Heavy Denim", anos: 6, lavagens: 120, secagem: 60, preco: "R$ 219,90" },
+            "L105": { nome: "Casaco de Lã Winter", cor: "Marrom Camel", tecido: "Lã Fria Natural", anos: 5, lavagens: 15, secagem: 0, preco: "R$ 299,90" },
+            "P103": { nome: "Jaqueta Corta-Vento", cor: "Verde Militar", tecido: "Poliéster Impermeável", anos: 3, lavagens: 80, secagem: 40, preco: "R$ 159,90" },
+            "I104": { nome: "Camisa Casual Linho", cor: "Areia Natural", tecido: "Linho Puro Rústico", anos: 4, lavagens: 40, secagem: 20, preco: "R$ 149,90" },
+            "S102": { nome: "Vestido Midi Fluido", cor: "Vermelho Rubi", tecido: "Seda Acetinada Genuína", anos: 2, lavagens: 20, secagem: 0, preco: "R$ 349,90" }
         };
 
-        // Ativação e inicialização da Câmera Traseira
-        const video = document.getElementById('video-preview');
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => { video.srcObject = stream; })
-            .catch(err => { console.error("Erro ao acessar câmera: ", err); });
+        let leitorAtivo = true;
+        let tamanhoSelecionado = null;
+        let produtoAtualSku = null;
 
-        // Simulação do leitor/reconhecimento óptico em tempo real
-        // Captura o último código gerado pelo painel do vendedor via localStorage para simular o "bip" da câmera
-        setInterval(() => {
-            let detectadoAtivo = localStorage.getItem('ecoTagCodigoAtivo');
-            if(detectadoAtivo){
-                document.getElementById('codigo-manual').value = detectadoAtivo;
-                localStorage.removeItem('ecoTagCodigoAtivo'); // consome o bip
-                processarValidade();
+        function switchTab(type) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if(type === 'scan') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-scan').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-photo').classList.add('active');
             }
-        }, 1500);
+        }
 
-        function processarValidade() {
-            const codDigitado = document.getElementById('codigo-manual').value.toUpperCase().trim();
-            const mesesParada = parseInt(document.getElementById('meses-armario').value) || 0;
+        // Simula reconhecimento de imagem inteligente baseado nas cores/arquivos
+        function processarFoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-            if (!bancoDadosLocal[codDigitado]) {
-                alert("Código inválido ou não detectado!");
-                return;
-            }
+            leitorAtivo = false;
+            document.getElementById('preview-container').style.display = 'block';
+            document.getElementById('img-captured').src = URL.createObjectURL(file);
+            
+            const aiStatus = document.getElementById('ai-loading');
+            aiStatus.style.display = 'block';
 
-            const pecaInfo = bancoDadosLocal[codDigitado];
-            const vidaUtilMeses = pecaInfo.anos * 12;
-            const limiteAlerta = vidaUtilMeses * 0.25;
+            // Inteligência Artificial Simulada: Seleciona uma peça aleatória ou correspondente do catálogo após 1.8 segundos
+            setTimeout(() => {
+                aiStatus.style.display = 'none';
+                const keys = Object.keys(bancoDadosLocal);
+                const randomSku = keys[Math.floor(Math.random() * keys.length)];
+                darBip();
+                exibirDados(randomSku);
+            }, 1800);
+        }
+
+        function darBip() {
+            try {
+                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let oscillator = audioCtx.createOscillator();
+                let gainNode = audioCtx.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 1180; 
+                gainNode.gain.value = 0.15; 
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 105);
+            } catch(e) {}
+        }
+
+        function iniciarCamera() {
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length) {
+                    let cameraId = devices[0].id;
+                    for (let device of devices) {
+                        const label = device.label.toLowerCase();
+                        if (label.includes('back') || label.includes('traseira') || label.includes('ambiente')) {
+                            cameraId = device.id;
+                            break;
+                        }
+                    }
+                    
+                    const html5QrCode = new Html5Qrcode("reader");
+                    html5QrCode.start(
+                        cameraId, 
+                        {
+                            fps: 30,
+                            formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.EAN_13 ],
+                            qrbox: (width, height) => { return { width: Math.min(width * 0.85, 320), height: Math.min(height * 0.45, 140) } }
+                        },
+                        (decodedText) => {
+                            let cod = decodedText.toUpperCase().trim();
+                            if (leitorAtivo && bancoDadosLocal[cod]) {
+                                leitorAtivo = false; 
+                                darBip();
+                                exibirDados(cod);
+                            }
+                        },
+                        (errorMessage) => { }
+                    ).catch(err => { console.error(err); });
+                }
+            }).catch(err => { alert("Permita o acesso à câmera."); });
+        }
+
+        function exibirDados(cod) {
+            produtoAtualSku = cod;
+            const pecaInfo = bancoDadosLocal[cod];
 
             document.getElementById('txt-nome').innerText = pecaInfo.nome;
-            document.getElementById('txt-id').innerText = codDigitado;
+            document.getElementById('txt-cor').innerText = "COR: " + pecaInfo.cor;
+            document.getElementById('txt-preco').innerText = pecaInfo.preco; 
+            document.getElementById('txt-lavagens').innerText = pecaInfo.lavagens + "x";
+            document.getElementById('txt-secagem').innerText = pecaInfo.secagem === 0 ? "Proibido" : pecaInfo.secagem + "x";
+            document.getElementById('txt-id').innerText = cod;
             document.getElementById('txt-material').innerText = pecaInfo.tecido;
             document.getElementById('txt-duracao').innerText = `${pecaInfo.anos} Anos`;
 
-            const badge = document.getElementById('status-badge');
-            const diagnostico = document.getElementById('txt-diagnostico');
+            document.getElementById('resultado-app').style.display = 'block';
+            document.getElementById('btn-reset').style.display = 'block';
+            document.getElementById('laser').style.backgroundColor = "#ff1744"; 
+        }
 
-            if (mesesParada >= limiteAlerta) {
-                badge.className = "status-badge vermelho";
-                badge.innerText = "Alerta Gaveta";
-                diagnostico.innerHTML = `⚠️ <strong>Roupa ociosa detectada.</strong> Esta peça está parada há ${mesesParada} meses. O limite tolerável para este ecossistema têxtil era de ${limiteAlerta} meses. Doe ou venda para circular!`;
-                diagnostico.style.color = "#ff1744";
-            } else {
-                badge.className = "status-badge verde";
-                badge.innerText = "Uso Saudável";
-                diagnostico.innerHTML = `✓ <strong>Ciclo Sustentável em dia!</strong> Guardada há ${mesesParada} meses de um limite seguro de ${limiteAlerta} meses. Continue aproveitando seu produto.`;
-                diagnostico.style.color = "#00e676";
+        function selectSize(btn, size) {
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            tamanhoSelecionado = size;
+        }
+
+        function efetuarReserva() {
+            if(!tamanhoSelecionado) {
+                alert("Por favor, selecione um tamanho (P, M, G, GG) antes de reservar.");
+                return;
             }
 
-            document.getElementById('resultado-app').style.display = 'block';
+            // Gera código localizador aleatório real
+            const localizador = "RES-" + Math.floor(1000 + Math.random() * 9000);
+            
+            document.getElementById('reserva-codigo').innerText = localizador;
+            document.getElementById('reserva-recibo').style.display = 'block';
+
+            // Persiste a informação da reserva no Storage para controle
+            const payloadReserva = { sku: produtoAtualSku, tamanho: tamanhoSelecionado, token: localizador };
+            localStorage.setItem('ultima_reserva', JSON.stringify(payloadReserva));
         }
+
+        function liberarProximoEscaneamento() {
+            leitorAtivo = true; 
+            tamanhoSelecionado = null;
+            produtoAtualSku = null;
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('resultado-app').style.display = 'none';
+            document.getElementById('preview-container').style.display = 'none';
+            document.getElementById('reserva-recibo').style.display = 'none';
+            document.getElementById('file-input').value = "";
+            document.getElementById('laser').style.backgroundColor = "var(--success)";
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        window.addEventListener('DOMContentLoaded', iniciarCamera);
     </script>
 </body>
 </html>
