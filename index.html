@@ -34,11 +34,11 @@
         .form-group { text-align: left; margin-bottom: 20px; }
         label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; color: #555; }
         
-        select, input { 
+        select { 
             width: 100%; padding: 14px; border-radius: 10px; border: 1px solid var(--border); 
             font-size: 15px; box-sizing: border-box; background: #fafafa; transition: all 0.2s;
         }
-        select:focus, input:focus { border-color: var(--accent); background: #fff; outline: none; }
+        select:focus { border-color: var(--accent); background: #fff; outline: none; }
 
         button { 
             width: 100%; padding: 16px; border-radius: 10px; background-color: var(--primary); 
@@ -78,25 +78,20 @@
 
     <div class="container">
         <h2>🏭 EcoTag Enterprise</h2>
-        <p class="subtitle">Configuração de Produtos e Preços do Vendedor</p>
+        <p class="subtitle">Configuração e Emissão de Etiquetas de Produtos</p>
         
         <div class="form-group">
             <label for="tipo-roupa">Selecione o Produto e Cor</label>
             <select id="tipo-roupa">
-                <option value="A102" data-nome="Camiseta Básica" data-cor="Preto Sólido">Camiseta Básica - Preto Sólido (A102)</option>
-                <option value="A103" data-nome="Camiseta Básica" data-cor="Branco Off-White">Camiseta Básica - Branco Off-White (A103)</option>
-                <option value="J106" data-nome="Calça Jeans Slim" data-cor="Azul Denim Tradicional">Calça Jeans Slim - Azul Denim (J106)</option>
-                <option value="J107" data-nome="Calça Jeans Slim" data-cor="Preto Estonado">Calça Jeans Slim - Preto Estonado (J107)</option>
-                <option value="L105" data-nome="Casaco de Lã Winter" data-cor="Marrom Camel">Casaco de Lã - Marrom Camel (L105)</option>
-                <option value="P103" data-nome="Jaqueta Corta-Vento" data-cor="Verde Militar">Jaqueta Corta-Vento - Verde Militar (P103)</option>
-                <option value="I104" data-nome="Camisa Casual Linho" data-cor="Areia Natural">Camisa Linho - Areia Natural (I104)</option>
-                <option value="S102" data-nome="Vestido Midi Fluido" data-cor="Vermelho Rubi">Vestido Midi - Vermelho Rubi (S102)</option>
+                <option value="A102" data-nome="Camiseta Básica" data-cor="Preto Sólido" data-preco="R$ 89,90">Camiseta Básica - Preto Sólido (A102)</option>
+                <option value="A103" data-nome="Camiseta Básica" data-cor="Branco Off-White" data-preco="R$ 89,90">Camiseta Básica - Branco Off-White (A103)</option>
+                <option value="J106" data-nome="Calça Jeans Slim" data-cor="Azul Denim Tradicional" data-preco="R$ 199,90">Calça Jeans Slim - Azul Denim (J106)</option>
+                <option value="J107" data-nome="Calça Jeans Slim" data-cor="Preto Estonado" data-preco="R$ 219,90">Calça Jeans Slim - Preto Estonado (J107)</option>
+                <option value="L105" data-nome="Casaco de Lã Winter" data-cor="Marrom Camel" data-preco="R$ 299,90">Casaco de Lã - Marrom Camel (L105)</option>
+                <option value="P103" data-nome="Jaqueta Corta-Vento" data-cor="Verde Militar" data-preco="R$ 159,90">Jaqueta Corta-Vento - Verde Militar (P103)</option>
+                <option value="I104" data-nome="Camisa Casual Linho" data-cor="Areia Natural" data-preco="R$ 149,90">Camisa Linho - Areia Natural (I104)</option>
+                <option value="S102" data-nome="Vestido Midi Fluido" data-cor="Vermelho Rubi" data-preco="R$ 349,90">Vestido Midi - Vermelho Rubi (S102)</option>
             </select>
-        </div>
-
-        <div class="form-group">
-            <label for="preco-roupa">Defina o Preço de Venda (R$)</label>
-            <input type="number" id="preco-roupa" value="149.90" step="0.01">
         </div>
 
         <button onclick="gerarEtiqueta()">Gerar Código de Barras</button>
@@ -123,14 +118,11 @@
             const codigo = combo.value;
             const nomePeca = combo.options[combo.selectedIndex].getAttribute('data-nome');
             const corPeca = combo.options[combo.selectedIndex].getAttribute('data-cor');
-            const precoDefinido = parseFloat(document.getElementById('preco-roupa').value).toFixed(2).replace('.', ',');
+            const precoFixo = combo.options[combo.selectedIndex].getAttribute('data-preco');
 
             document.getElementById('lbl-nome').innerText = nomePeca;
             document.getElementById('lbl-cor').innerText = "COR: " + corPeca;
-            document.getElementById('lbl-preco').innerText = 'R$ ' + precoDefinido;
-
-            // SALVA O PREÇO DINAMICAMENTE PARA O APP DO CLIENTE LER
-            localStorage.setItem('preco_dinamico_' + codigo, 'R$ ' + precoDefinido);
+            document.getElementById('lbl-preco').innerText = precoFixo;
 
             // Código de barras espesso otimizado para focagem rápida
             JsBarcode("#barcode", codigo, {
